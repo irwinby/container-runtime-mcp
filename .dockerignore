@@ -1,0 +1,33 @@
+# Build artifacts
+/container-runtime-mcp
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS
+.DS_Store
+
+# Docker
+Dockerfile*
+.dockerignore
+
+# Go
+*.test
+*.out
+coverage.html
+coverage.out
+
+# Tools and vendor
+tools/
+vendor/
+
+# Docs and misc
+*.md
+LICENSE

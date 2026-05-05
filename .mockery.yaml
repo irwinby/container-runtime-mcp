@@ -1,0 +1,77 @@
+with-expecter: false
+issue-845-fix: true
+resolve-type-alias: false
+disable-version-string: false
+packages:
+  github.com/irwinby/container-runtime-mcp/internal/provider/docker:
+    config:
+      dir: "{{.InterfaceDir}}/mock"
+      outpkg: mock
+      filename: "{{.InterfaceName | snakecase}}.go"
+      mockname: "Mock{{.InterfaceName | firstUpper}}"
+    interfaces:
+      dockerClient:
+  github.com/irwinby/container-runtime-mcp/internal/service/container:
+    config:
+      dir: "{{.InterfaceDir}}/mock"
+      outpkg: mock
+      filename: "{{.InterfaceName | snakecase}}.go"
+      mockname: "Mock{{.InterfaceName | firstUpper}}"
+    interfaces:
+      providerClient:
+  github.com/irwinby/container-runtime-mcp/internal/service/image:
+    config:
+      dir: "{{.InterfaceDir}}/mock"
+      outpkg: mock
+      filename: "{{.InterfaceName | snakecase}}.go"
+      mockname: "Mock{{.InterfaceName | firstUpper}}"
+    interfaces:
+      providerClient:
+  github.com/irwinby/container-runtime-mcp/internal/service/system:
+    config:
+      dir: "{{.InterfaceDir}}/mock"
+      outpkg: mock
+      filename: "{{.InterfaceName | snakecase}}.go"
+      mockname: "Mock{{.InterfaceName | firstUpper}}"
+    interfaces:
+      providerClient:
+  github.com/irwinby/container-runtime-mcp/internal/service/volume:
+    config:
+      dir: "{{.InterfaceDir}}/mock"
+      outpkg: mock
+      filename: "{{.InterfaceName | snakecase}}.go"
+      mockname: "Mock{{.InterfaceName | firstUpper}}"
+    interfaces:
+      providerClient:
+  github.com/irwinby/container-runtime-mcp/internal/api/mcp/tools/container:
+    config:
+      dir: "{{.InterfaceDir}}/mock"
+      outpkg: mock
+      filename: "{{.InterfaceName | snakecase}}.go"
+      mockname: "Mock{{.InterfaceName | firstUpper}}"
+    interfaces:
+      containerService:
+  github.com/irwinby/container-runtime-mcp/internal/api/mcp/tools/image:
+    config:
+      dir: "{{.InterfaceDir}}/mock"
+      outpkg: mock
+      filename: "{{.InterfaceName | snakecase}}.go"
+      mockname: "Mock{{.InterfaceName | firstUpper}}"
+    interfaces:
+      imageService:
+  github.com/irwinby/container-runtime-mcp/internal/api/mcp/tools/system:
+    config:
+      dir: "{{.InterfaceDir}}/mock"
+      outpkg: mock
+      filename: "{{.InterfaceName | snakecase}}.go"
+      mockname: "Mock{{.InterfaceName | firstUpper}}"
+    interfaces:
+      systemService:
+  github.com/irwinby/container-runtime-mcp/internal/api/mcp/tools/volume:
+    config:
+      dir: "{{.InterfaceDir}}/mock"
+      outpkg: mock
+      filename: "{{.InterfaceName | snakecase}}.go"
+      mockname: "Mock{{.InterfaceName | firstUpper}}"
+    interfaces:
+      volumeService:

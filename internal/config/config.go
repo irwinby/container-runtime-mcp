@@ -1,0 +1,142 @@
+package config
+
+import (
+	"context"
+	"fmt"
+	"net"
+	"strings"
+	"time"
+
+	"github.com/irwinby/container-runtime-mcp/pkg/logger"
+	env "github.com/sethvargo/go-envconfig"
+)
+
+const prefix = "CONTAINER_RUNTIME_"
+
+type TransportType string
+
+const (
+	TransportStdio TransportType = "stdio"
+	TransportHTTP  TransportType = "http"
+)
+
+type TransportConfig struct {
+	Type TransportType `env:"MCP_TRANSPORT,default=stdio"`
+	HTTP *HTTPTransportConfig
+}
+
+type HTTPTransportConfig struct {
+	Addr           string        `env:"MCP_HTTP_ADDR,default=127.0.0.1:8080"`
+	Path           string        `env:"MCP_HTTP_PATH,default=/mcp"`
+	SessionTimeout time.Duration `env:"MCP_HTTP_SESSION_TIMEOUT,default=30m"`
+	ReadTimeout    time.Duration `env:"MCP_HTTP_READ_TIMEOUT,default=10s"`
+	IDLETimeout    time.Duration `env:"MCP_HTTP_IDLE_TIMEOUT,default=120s"`
+	AuthToken      string        `env:"MCP_HTTP_AUTH_TOKEN,default="`
+}
+
+type MCPServer struct {
+	Name            string `env:"MCP_SERVER_NAME,default=Container Runtime"`
+	Title           string `env:"MCP_SERVER_TITLE,default="`
+	Version         string `env:"MCP_SERVER_VERSION,default=1.0.0"`
+	TransportConfig TransportConfig
+}
+
+type Config struct {
+	MCPServer
+	RemoteOperationTimeout time.Duration `env:"MCP_REMOTE_OPERATION_TIMEOUT,default=10m"`
+	ReadOnly               bool          `env:"MCP_READ_ONLY,default=false"`
+	LogLevel               logger.Level  `env:"LOG_LEVEL,default=info"`
+}
+
+// Validate checks the configuration for errors.
+func (cfg *Config) Validate() error {
+	if cfg.RemoteOperationTimeout < 0 {
+		return fmt.Errorf("remote operation timeout must not be negative")
+	}
+
+	switch cfg.LogLevel {
+	case logger.DebugLevel, logger.InfoLevel, logger.WarnLevel, logger.ErrorLevel:
+	default:
+		return fmt.Errorf("unsupported log level: %s", cfg.LogLevel)
+	}
+
+	switch cfg.TransportConfig.Type {
+	case TransportStdio, TransportHTTP:
+	default:
+		return fmt.Errorf("unsupported transport: %s", cfg.TransportConfig.Type)
+	}
+
+	if cfg.TransportConfig.Type == TransportHTTP {
+		if cfg.TransportConfig.HTTP == nil {
+			return fmt.Errorf("http transport requires http configuration")
+		}
+
+		if !strings.HasPrefix(cfg.TransportConfig.HTTP.Path, "/") {
+			return fmt.Errorf("http path must start with /")
+		}
+
+		if cfg.TransportConfig.HTTP.SessionTimeout < 0 {
+			return fmt.Errorf("http session timeout must not be negative")
+		}
+
+		if cfg.TransportConfig.HTTP.ReadTimeout < 0 {
+			return fmt.Errorf("http read timeout must not be negative")
+		}
+
+		if cfg.TransportConfig.HTTP.IDLETimeout < 0 {
+			return fmt.Errorf("http idle timeout must not be negative")
+		}
+
+		if !cfg.ReadOnly && cfg.TransportConfig.HTTP.AuthToken == "" {
+			isLocal, err := isLocalHTTPAddr(cfg.TransportConfig.HTTP.Addr)
+			if err != nil {
+				return fmt.Errorf("validate http address: %w", err)
+			}
+
+			if !isLocal {
+				return fmt.Errorf("http auth token is required for non-local write-capable http transport")
+			}
+		}
+	}
+
+	return nil
+}
+
+func LoadFromEnv(ctx context.Context) (*Config, error) {
+	var cfg Config
+
+	err := env.ProcessWith(ctx, &env.Config{
+		Target:   &cfg,
+		Lookuper: env.PrefixLookuper(prefix, env.OsLookuper()),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("process config from env: %w", err)
+	}
+
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
+}
+
+// isLocalHTTPAddr reports whether an HTTP listen address is bound to a
+// loopback or localhost interface, making it safe to allow unauthenticated
+// write-capable access.
+func isLocalHTTPAddr(addr string) (bool, error) {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return false, fmt.Errorf("parse http address: %w", err)
+	}
+
+	if host == "localhost" {
+		return true, nil
+	}
+
+	ip := net.ParseIP(host)
+	if ip != nil {
+		return ip.IsLoopback(), nil
+	}
+
+	return false, nil
+}
