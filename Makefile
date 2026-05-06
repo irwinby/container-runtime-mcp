@@ -1,4 +1,4 @@
-.PHONY: all build run run-http test test-race fmt vet imports lint golangci-lint generate tidy clean image-build image-run image-run-http image-run-http-read-only help
+.PHONY: all build run run-http test test-race fmt fmt-check vet imports imports-check lint golangci-lint generate tidy tidy-check coverage coverage-summary clean image-build image-run image-run-http image-run-http-read-only help
 
 BINARY_NAME := container-runtime-mcp
 BUILD_FLAGS := -o $(BINARY_NAME) .
@@ -34,14 +34,36 @@ test: ## Run all tests.
 test-race: ## Run all tests with the race detector.
 	go test -race ./...
 
+coverage: ## Run tests with coverage profile.
+	go test -covermode=atomic -coverprofile=coverage.out ./...
+
+coverage-summary: ## Print coverage summary.
+	go tool cover -func=coverage.out
+
 fmt: ## Format all Go code with gofmt.
 	go fmt ./...
+
+fmt-check: ## Check if Go code is formatted (read-only).
+	@output=$$(gofmt -l .); \
+	if [ -n "$$output" ]; then \
+		echo "gofmt would modify:"; \
+		echo "$$output"; \
+		exit 1; \
+	fi
 
 vet: ## Run go vet on all packages.
 	go vet ./...
 
 imports: ## Organize imports with goimports.
 	GOWORK=off go -C tools run golang.org/x/tools/cmd/goimports -w ..
+
+imports-check: ## Check if imports are organized (read-only).
+	@output=$$(GOWORK=off go -C tools run golang.org/x/tools/cmd/goimports -l ..); \
+	if [ -n "$$output" ]; then \
+		echo "goimports would modify:"; \
+		echo "$$output"; \
+		exit 1; \
+	fi
 
 lint: fmt imports vet golangci-lint ## Run fmt, imports, vet, and golangci-lint.
 
@@ -55,6 +77,11 @@ generate: ## Generate mocks with mockery.
 
 tidy: ## Tidy and verify Go module dependencies.
 	go mod tidy
+
+tidy-check: ## Tidy modules and verify no changes.
+	@go mod tidy
+	@go -C tools mod tidy
+	@git diff --exit-code go.mod go.sum tools/go.mod tools/go.sum
 
 clean: ## Remove build artifacts.
 	rm -f $(BINARY_NAME)

@@ -1,5 +1,8 @@
 # container-runtime-mcp
 
+[![CI](https://github.com/irwinby/container-runtime-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/irwinby/container-runtime-mcp/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/irwinby/container-runtime-mcp/graph/badge.svg)](https://codecov.io/gh/irwinby/container-runtime-mcp)
+
 `container-runtime-mcp` is a Model Context Protocol (MCP) server that exposes container runtime operations as MCP tools.
 
 The current implementation uses Docker-compatible APIs. Docker is supported directly, and compatible runtimes such as Podman may work when exposed through a Docker-compatible API socket.
