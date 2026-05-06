@@ -2,6 +2,7 @@ package volume
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	providers "github.com/irwinby/container-runtime-mcp/internal/provider"
@@ -36,14 +37,20 @@ func TestProviderListVolumes(t *testing.T) {
 				},
 			},
 		},
+		"error": {
+			given: given{params: providers.ListVolumesParams{Dangling: true}, err: errors.New("docker error")},
+			want: want{
+				dangling: true,
+			},
+		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := dockermock.NewMockDockerClient(t)
 
 			filters := client.Filters{}
-			if tt.want.dangling {
+			if test.want.dangling {
 				filters = filters.Add("dangling", "true")
 			}
 
@@ -51,21 +58,21 @@ func TestProviderListVolumes(t *testing.T) {
 				Filters: filters,
 			}).Return(client.VolumeListResult{
 				Items: []volume.Volume{{Name: "vol1", Driver: "local"}},
-			}, tt.given.err)
+			}, test.given.err)
 
 			provider := NewProvider(mockClient, nopTimeout)
 
-			result, err := provider.ListVolumes(context.Background(), tt.given.params)
+			result, err := provider.ListVolumes(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
 			require.Len(t, result, 1)
-			require.Equal(t, tt.want.volumes[0].Name, result[0].Name)
-			require.Equal(t, tt.want.volumes[0].Driver, result[0].Driver)
+			require.Equal(t, test.want.volumes[0].Name, result[0].Name)
+			require.Equal(t, test.want.volumes[0].Driver, result[0].Driver)
 		})
 	}
 }

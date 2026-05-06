@@ -49,27 +49,27 @@ func TestServiceListVolumes(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := volumemock.NewMockProviderClient(t)
 
-			if tt.want.called {
+			if test.want.called {
 				mockClient.On("ListVolumes", mock.Anything, providers.ListVolumesParams{
-					Dangling: tt.given.params.Dangling,
-				}).Return(tt.given.result, tt.given.err)
+					Dangling: test.given.params.Dangling,
+				}).Return(test.given.result, test.given.err)
 			}
 
 			service := NewService(mockClient, services.Policy{}, zap.NewNop())
 
-			result, err := service.ListVolumes(context.Background(), tt.given.params)
+			result, err := service.ListVolumes(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.want.result, result)
+			assert.Equal(t, test.want.result, result)
 		})
 	}
 }

@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	providers "github.com/irwinby/container-runtime-mcp/internal/provider"
@@ -40,35 +41,44 @@ func TestProviderInspectContainer(t *testing.T) {
 				state: "running",
 			},
 		},
+		"error": {
+			given: given{
+				params: providers.InspectContainerParams{Name: "web"},
+				err:    errors.New("docker error"),
+			},
+			want: want{
+				name: "web",
+			},
+		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := dockermock.NewMockDockerClient(t)
 
-			mockClient.On("ContainerInspect", mock.Anything, tt.want.name, client.ContainerInspectOptions{}).Return(client.ContainerInspectResult{
+			mockClient.On("ContainerInspect", mock.Anything, test.want.name, client.ContainerInspectOptions{}).Return(client.ContainerInspectResult{
 				Container: container.InspectResponse{
-					ID:   tt.want.id,
-					Name: tt.want.cname,
+					ID:   test.want.id,
+					Name: test.want.cname,
 					State: &container.State{
-						Status: container.ContainerState(tt.want.state),
+						Status: container.ContainerState(test.want.state),
 					},
 				},
-			}, tt.given.err)
+			}, test.given.err)
 
 			provider := NewProvider(mockClient, nopTimeout)
 
-			result, err := provider.InspectContainer(context.Background(), tt.given.params)
+			result, err := provider.InspectContainer(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, tt.want.id, result.ID)
-			require.Equal(t, tt.want.cname, result.Name)
-			require.Equal(t, tt.want.state, result.State)
+			require.Equal(t, test.want.id, result.ID)
+			require.Equal(t, test.want.cname, result.Name)
+			require.Equal(t, test.want.state, result.State)
 		})
 	}
 }

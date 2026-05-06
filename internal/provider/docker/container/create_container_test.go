@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	providers "github.com/irwinby/container-runtime-mcp/internal/provider"
@@ -41,30 +42,43 @@ func TestProviderCreateContainer(t *testing.T) {
 				image: "nginx:latest",
 			},
 		},
+		"error": {
+			given: given{
+				params: providers.CreateContainerParams{
+					Name:  "web",
+					Image: "nginx:latest",
+				},
+				err: errors.New("docker error"),
+			},
+			want: want{
+				name:  "web",
+				image: "nginx:latest",
+			},
+		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := dockermock.NewMockDockerClient(t)
 
 			mockClient.On("ContainerCreate", mock.Anything, client.ContainerCreateOptions{
-				Name: tt.want.name,
+				Name: test.want.name,
 				Config: &container.Config{
-					Image: tt.want.image,
+					Image: test.want.image,
 				},
-			}).Return(client.ContainerCreateResult{ID: tt.want.id}, tt.given.err)
+			}).Return(client.ContainerCreateResult{ID: test.want.id}, test.given.err)
 
 			provider := NewProvider(mockClient, nopTimeout)
 
-			id, err := provider.CreateContainer(context.Background(), tt.given.params)
+			id, err := provider.CreateContainer(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, tt.want.id, id)
+			require.Equal(t, test.want.id, id)
 		})
 	}
 }

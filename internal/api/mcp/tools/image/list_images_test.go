@@ -64,26 +64,27 @@ func TestHandlerListImages(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			mockSvc := imagemock.NewMockImageService(t)
-			mockSvc.On("ListImages", mock.Anything, image.ListImagesParams{
-				All:        tt.given.input.All,
-				SharedSize: tt.given.input.SharedSize,
-			}).Return(tt.given.result, tt.given.err)
+			mockService := imagemock.NewMockImageService(t)
 
-			handler := NewToolsHandler(mockSvc)
+			mockService.On("ListImages", mock.Anything, image.ListImagesParams{
+				All:        test.given.input.All,
+				SharedSize: test.given.input.SharedSize,
+			}).Return(test.given.result, test.given.err)
 
-			_, output, err := handler.ListImages(context.Background(), &mcp.CallToolRequest{}, tt.given.input)
+			handler := NewToolsHandler(mockService)
 
-			if tt.given.err != nil {
+			_, output, err := handler.ListImages(context.Background(), &mcp.CallToolRequest{}, test.given.input)
+
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.True(t, tt.want.called)
-			assert.Equal(t, tt.want.images, output.Images)
+			assert.True(t, test.want.called)
+			assert.Equal(t, test.want.images, output.Images)
 		})
 	}
 }

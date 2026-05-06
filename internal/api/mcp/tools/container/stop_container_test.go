@@ -50,21 +50,22 @@ func TestHandlerStopContainer(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			mockSvc := containermock.NewMockContainerService(t)
-			if tt.want.called {
-				mockSvc.On("StopContainer", mock.Anything, container.StopContainerParams{
-					Name:   tt.want.name,
-					Signal: tt.want.signal,
-				}).Return(tt.given.err)
+			mockService := containermock.NewMockContainerService(t)
+
+			if test.want.called {
+				mockService.On("StopContainer", mock.Anything, container.StopContainerParams{
+					Name:   test.want.name,
+					Signal: test.want.signal,
+				}).Return(test.given.err)
 			}
 
-			handler := NewToolsHandler(mockSvc)
+			handler := NewToolsHandler(mockService)
 
-			_, _, err := handler.StopContainer(context.Background(), &mcp.CallToolRequest{}, tt.given.input)
+			_, _, err := handler.StopContainer(context.Background(), &mcp.CallToolRequest{}, test.given.input)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}

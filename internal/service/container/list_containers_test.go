@@ -44,35 +44,35 @@ func TestServiceListContainers(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := containermock.NewMockProviderClient(t)
 
-			if tt.want.called {
+			if test.want.called {
 				mockClient.On("ListContainers", mock.Anything, providers.ListContainersParams{
-					All:    tt.given.params.All,
-					Limit:  tt.given.params.Limit,
-					Size:   tt.given.params.Size,
-					Latest: tt.given.params.Latest,
-				}).Return(tt.given.result, tt.given.err)
+					All:    test.given.params.All,
+					Limit:  test.given.params.Limit,
+					Size:   test.given.params.Size,
+					Latest: test.given.params.Latest,
+				}).Return(test.given.result, test.given.err)
 			}
 
 			service := NewService(mockClient, services.Policy{}, zap.NewNop())
 
-			result, err := service.ListContainers(context.Background(), tt.given.params)
+			result, err := service.ListContainers(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
-			if !tt.want.called {
+			if !test.want.called {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.want.result, result)
+			assert.Equal(t, test.want.result, result)
 		})
 	}
 }

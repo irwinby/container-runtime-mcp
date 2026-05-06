@@ -36,26 +36,26 @@ func TestProviderCreateVolume(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := dockermock.NewMockDockerClient(t)
 
 			mockClient.On("VolumeCreate", mock.Anything, client.VolumeCreateOptions{
-				Name:   tt.given.params.Name,
-				Driver: tt.given.params.Driver,
-			}).Return(client.VolumeCreateResult{Volume: volume.Volume{Name: tt.given.params.Name, Driver: tt.given.params.Driver}}, tt.given.err)
+				Name:   test.given.params.Name,
+				Driver: test.given.params.Driver,
+			}).Return(client.VolumeCreateResult{Volume: volume.Volume{Name: test.given.params.Name, Driver: test.given.params.Driver}}, test.given.err)
 
 			provider := NewProvider(mockClient, nopTimeout)
 
-			result, err := provider.CreateVolume(context.Background(), tt.given.params)
+			result, err := provider.CreateVolume(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, tt.want.vol.Name, result.Name)
+			require.Equal(t, test.want.vol.Name, result.Name)
 		})
 	}
 }

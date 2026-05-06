@@ -51,27 +51,28 @@ func TestHandlerTagImage(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			mockSvc := imagemock.NewMockImageService(t)
-			if tt.want.called {
-				mockSvc.On("TagImage", mock.Anything, image.TagImageParams{
-					Source: tt.want.source,
-					Target: tt.want.target,
-				}).Return(tt.given.err)
+			mockService := imagemock.NewMockImageService(t)
+
+			if test.want.called {
+				mockService.On("TagImage", mock.Anything, image.TagImageParams{
+					Source: test.want.source,
+					Target: test.want.target,
+				}).Return(test.given.err)
 			}
 
-			handler := NewToolsHandler(mockSvc)
+			handler := NewToolsHandler(mockService)
 
-			_, _, err := handler.TagImage(context.Background(), &mcp.CallToolRequest{}, tt.given.input)
+			_, _, err := handler.TagImage(context.Background(), &mcp.CallToolRequest{}, test.given.input)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.True(t, tt.want.called)
+			assert.True(t, test.want.called)
 		})
 	}
 }

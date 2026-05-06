@@ -91,42 +91,42 @@ func TestServiceExecContainer(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := containermock.NewMockProviderClient(t)
 
-			if tt.want.called {
+			if test.want.called {
 				mockClient.On("ExecContainer", mock.Anything, providers.ExecContainerParams{
-					Name:         tt.given.params.Name,
-					Cmd:          tt.given.params.Cmd,
-					Env:          tt.given.params.Env,
-					WorkingDir:   tt.given.params.WorkingDir,
-					User:         tt.given.params.User,
-					Privileged:   tt.given.params.Privileged,
-					TTY:          tt.given.params.TTY,
-					AttachStdin:  tt.given.params.AttachStdin,
-					AttachStdout: tt.given.params.AttachStdout,
-					AttachStderr: tt.given.params.AttachStderr,
-					Stdin:        tt.given.params.Stdin,
-				}).Return(tt.given.result, tt.given.err)
+					Name:         test.given.params.Name,
+					Cmd:          test.given.params.Cmd,
+					Env:          test.given.params.Env,
+					WorkingDir:   test.given.params.WorkingDir,
+					User:         test.given.params.User,
+					Privileged:   test.given.params.Privileged,
+					TTY:          test.given.params.TTY,
+					AttachStdin:  test.given.params.AttachStdin,
+					AttachStdout: test.given.params.AttachStdout,
+					AttachStderr: test.given.params.AttachStderr,
+					Stdin:        test.given.params.Stdin,
+				}).Return(test.given.result, test.given.err)
 			}
 
 			service := NewService(mockClient, services.Policy{}, zap.NewNop())
 
-			result, err := service.ExecContainer(context.Background(), tt.given.params)
+			result, err := service.ExecContainer(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
-			if !tt.want.called {
+			if !test.want.called {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.want.result, result)
+			assert.Equal(t, test.want.result, result)
 		})
 	}
 }

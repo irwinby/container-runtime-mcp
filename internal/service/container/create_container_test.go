@@ -62,28 +62,28 @@ func TestServiceCreateContainer(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := containermock.NewMockProviderClient(t)
 
-			if tt.want.called {
+			if test.want.called {
 				mockClient.On("CreateContainer", mock.Anything, providers.CreateContainerParams{
-					Name:  tt.want.name,
-					Image: tt.want.image,
-				}).Return(tt.given.id, tt.given.err)
+					Name:  test.want.name,
+					Image: test.want.image,
+				}).Return(test.given.id, test.given.err)
 			}
 
 			service := NewService(mockClient, services.Policy{}, zap.NewNop())
 
-			id, err := service.CreateContainer(context.Background(), tt.given.params)
+			id, err := service.CreateContainer(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.want.id, id)
+			assert.Equal(t, test.want.id, id)
 		})
 	}
 }

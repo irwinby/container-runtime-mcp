@@ -44,27 +44,27 @@ func TestServiceRemoveVolume(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := volumemock.NewMockProviderClient(t)
 
-			if tt.want.called {
+			if test.want.called {
 				mockClient.On("RemoveVolume", mock.Anything, providers.RemoveVolumeParams{
-					Name:  tt.want.name,
-					Force: tt.want.force,
-				}).Return(tt.given.err)
+					Name:  test.want.name,
+					Force: test.want.force,
+				}).Return(test.given.err)
 			}
 
 			service := NewService(mockClient, services.Policy{}, zap.NewNop())
 
-			err := service.RemoveVolume(context.Background(), tt.given.params)
+			err := service.RemoveVolume(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
-			if !tt.want.called {
+			if !test.want.called {
 				require.Error(t, err)
 				return
 			}

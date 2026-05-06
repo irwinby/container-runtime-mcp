@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	providers "github.com/irwinby/container-runtime-mcp/internal/provider"
@@ -29,7 +30,7 @@ func TestProviderRestartContainer(t *testing.T) {
 		given given
 		want  want
 	}{
-		"success": {
+		"success with signal and timeout": {
 			given: given{
 				params: providers.RestartContainerParams{
 					Name:           "web",
@@ -43,22 +44,43 @@ func TestProviderRestartContainer(t *testing.T) {
 				timeout: &timeout,
 			},
 		},
+		"success without signal and timeout": {
+			given: given{
+				params: providers.RestartContainerParams{
+					Name: "web",
+				},
+			},
+			want: want{
+				name: "web",
+			},
+		},
+		"error": {
+			given: given{
+				params: providers.RestartContainerParams{
+					Name: "web",
+				},
+				err: errors.New("docker error"),
+			},
+			want: want{
+				name: "web",
+			},
+		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := dockermock.NewMockDockerClient(t)
 
-			mockClient.On("ContainerRestart", mock.Anything, tt.want.name, client.ContainerRestartOptions{
-				Signal:  tt.want.signal,
-				Timeout: tt.want.timeout,
-			}).Return(client.ContainerRestartResult{}, tt.given.err)
+			mockClient.On("ContainerRestart", mock.Anything, test.want.name, client.ContainerRestartOptions{
+				Signal:  test.want.signal,
+				Timeout: test.want.timeout,
+			}).Return(client.ContainerRestartResult{}, test.given.err)
 
 			provider := NewProvider(mockClient, nopTimeout)
 
-			err := provider.RestartContainer(context.Background(), tt.given.params)
+			err := provider.RestartContainer(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}

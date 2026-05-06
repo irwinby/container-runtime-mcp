@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	providers "github.com/irwinby/container-runtime-mcp/internal/provider"
@@ -44,23 +45,34 @@ func TestProviderRemoveContainer(t *testing.T) {
 				removeLinks:   true,
 			},
 		},
+		"error": {
+			given: given{
+				params: providers.RemoveContainerParams{
+					Name: "web",
+				},
+				err: errors.New("docker error"),
+			},
+			want: want{
+				name: "web",
+			},
+		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := dockermock.NewMockDockerClient(t)
 
-			mockClient.On("ContainerRemove", mock.Anything, tt.want.name, client.ContainerRemoveOptions{
-				Force:         tt.want.force,
-				RemoveVolumes: tt.want.removeVolumes,
-				RemoveLinks:   tt.want.removeLinks,
-			}).Return(client.ContainerRemoveResult{}, tt.given.err)
+			mockClient.On("ContainerRemove", mock.Anything, test.want.name, client.ContainerRemoveOptions{
+				Force:         test.want.force,
+				RemoveVolumes: test.want.removeVolumes,
+				RemoveLinks:   test.want.removeLinks,
+			}).Return(client.ContainerRemoveResult{}, test.given.err)
 
 			provider := NewProvider(mockClient, nopTimeout)
 
-			err := provider.RemoveContainer(context.Background(), tt.given.params)
+			err := provider.RemoveContainer(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}

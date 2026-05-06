@@ -46,23 +46,23 @@ func TestServicePing(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := systemmock.NewMockProviderClient(t)
 
-			mockClient.On("Ping", mock.Anything).Return(tt.given.result, tt.given.err).Once()
+			mockClient.On("Ping", mock.Anything).Return(test.given.result, test.given.err).Once()
 
 			service := NewService(mockClient, zap.NewNop())
 
 			got, err := service.Ping(context.Background())
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.want.result, got)
+			assert.Equal(t, test.want.result, got)
 		})
 	}
 }

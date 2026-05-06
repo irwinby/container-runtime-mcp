@@ -8,20 +8,22 @@ import (
 )
 
 func TestToolsHandler_Register_CanWriteTrue(t *testing.T) {
-	mockSvc := volumemock.NewMockVolumeService(t)
-	mockSvc.On("CanWrite").Return(true).Once()
+	mockService := volumemock.NewMockVolumeService(t)
 
-	handler := NewToolsHandler(mockSvc)
+	mockService.On("CanWrite").Return(true).Once()
+
+	handler := NewToolsHandler(mockService)
 
 	server := mcp.NewServer(&mcp.Implementation{Name: "Test", Version: "1.0.0"}, &mcp.ServerOptions{})
 	handler.Register(server)
 }
 
 func TestToolsHandler_Register_CanWriteFalse(t *testing.T) {
-	mockSvc := volumemock.NewMockVolumeService(t)
-	mockSvc.On("CanWrite").Return(false).Once()
+	mockService := volumemock.NewMockVolumeService(t)
 
-	handler := NewToolsHandler(mockSvc)
+	mockService.On("CanWrite").Return(false).Once()
+
+	handler := NewToolsHandler(mockService)
 
 	server := mcp.NewServer(&mcp.Implementation{Name: "Test", Version: "1.0.0"}, &mcp.ServerOptions{})
 	handler.Register(server)

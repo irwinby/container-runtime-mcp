@@ -53,27 +53,27 @@ func TestServiceInspectContainer(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := containermock.NewMockProviderClient(t)
 
-			if tt.want.called {
+			if test.want.called {
 				mockClient.On("InspectContainer", mock.Anything, providers.InspectContainerParams{
-					Name: tt.want.name,
-				}).Return(tt.given.result, tt.given.err)
+					Name: test.want.name,
+				}).Return(test.given.result, test.given.err)
 			}
 
 			service := NewService(mockClient, services.Policy{}, zap.NewNop())
 
-			result, err := service.InspectContainer(context.Background(), tt.given.params)
+			result, err := service.InspectContainer(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.want.result, result)
+			assert.Equal(t, test.want.result, result)
 		})
 	}
 }

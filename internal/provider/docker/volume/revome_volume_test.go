@@ -37,19 +37,19 @@ func TestProviderRemoveVolume(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := dockermock.NewMockDockerClient(t)
 
-			mockClient.On("VolumeRemove", mock.Anything, tt.want.name, client.VolumeRemoveOptions{
-				Force: tt.want.force,
-			}).Return(client.VolumeRemoveResult{}, tt.given.err)
+			mockClient.On("VolumeRemove", mock.Anything, test.want.name, client.VolumeRemoveOptions{
+				Force: test.want.force,
+			}).Return(client.VolumeRemoveResult{}, test.given.err)
 
 			provider := NewProvider(mockClient, nopTimeout)
 
-			err := provider.RemoveVolume(context.Background(), tt.given.params)
+			err := provider.RemoveVolume(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}

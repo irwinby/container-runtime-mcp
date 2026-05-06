@@ -63,17 +63,17 @@ func TestParseLevel(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			got, err := ParseLevel(tt.given.level)
+			got, err := ParseLevel(test.given.level)
 
-			if tt.want.err {
+			if test.want.err {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, tt.want.level, got)
+			require.Equal(t, test.want.level, got)
 		})
 	}
 }
@@ -111,11 +111,11 @@ func TestNew(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			logger, err := New(tt.given.opts...)
+			logger, err := New(test.given.opts...)
 
-			if tt.want.err {
+			if test.want.err {
 				require.Error(t, err)
 				return
 			}

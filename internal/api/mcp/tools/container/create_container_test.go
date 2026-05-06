@@ -79,27 +79,28 @@ func TestHandlerCreateContainer(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			mockSvc := containermock.NewMockContainerService(t)
-			if tt.want.called {
-				mockSvc.On("CreateContainer", mock.Anything, container.CreateContainerParams{
-					Name:  tt.want.name,
-					Image: tt.want.image,
-				}).Return(tt.given.id, tt.given.err)
+			mockService := containermock.NewMockContainerService(t)
+
+			if test.want.called {
+				mockService.On("CreateContainer", mock.Anything, container.CreateContainerParams{
+					Name:  test.want.name,
+					Image: test.want.image,
+				}).Return(test.given.id, test.given.err)
 			}
 
-			handler := NewToolsHandler(mockSvc)
+			handler := NewToolsHandler(mockService)
 
-			_, output, err := handler.CreateContainer(context.Background(), &mcp.CallToolRequest{}, tt.given.input)
+			_, output, err := handler.CreateContainer(context.Background(), &mcp.CallToolRequest{}, test.given.input)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.given.id, output.ID)
+			assert.Equal(t, test.given.id, output.ID)
 		})
 	}
 }

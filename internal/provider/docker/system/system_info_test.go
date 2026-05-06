@@ -2,6 +2,7 @@ package system
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	dockermock "github.com/irwinby/container-runtime-mcp/internal/provider/docker/mock"
@@ -36,35 +37,39 @@ func TestProviderSystemInfo(t *testing.T) {
 				images:            10,
 			},
 		},
+		"error": {
+			given: given{err: errors.New("docker error")},
+			want:  want{},
+		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := dockermock.NewMockDockerClient(t)
 
 			mockClient.On("Info", mock.Anything, client.InfoOptions{}).Return(client.SystemInfoResult{
 				Info: system.Info{
-					ID:                tt.want.id,
-					Containers:        tt.want.containers,
-					ContainersRunning: tt.want.containersRunning,
-					Images:            tt.want.images,
+					ID:                test.want.id,
+					Containers:        test.want.containers,
+					ContainersRunning: test.want.containersRunning,
+					Images:            test.want.images,
 				},
-			}, tt.given.err)
+			}, test.given.err)
 
 			provider := NewProvider(mockClient, nopTimeout)
 
 			result, err := provider.SystemInfo(context.Background())
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, tt.want.id, result.ID)
-			require.Equal(t, tt.want.containers, result.Containers)
-			require.Equal(t, tt.want.containersRunning, result.ContainersRunning)
-			require.Equal(t, tt.want.images, result.Images)
+			require.Equal(t, test.want.id, result.ID)
+			require.Equal(t, test.want.containers, result.Containers)
+			require.Equal(t, test.want.containersRunning, result.ContainersRunning)
+			require.Equal(t, test.want.images, result.Images)
 		})
 	}
 }

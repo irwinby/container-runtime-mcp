@@ -72,34 +72,35 @@ func TestHandlerListContainers(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			mockSvc := containermock.NewMockContainerService(t)
-			if tt.want.called {
-				mockSvc.On("ListContainers", mock.Anything, container.ListContainersParams{
-					All:    tt.given.input.All,
-					Limit:  tt.given.input.Limit,
-					Size:   tt.given.input.Size,
-					Latest: tt.given.input.Latest,
-				}).Return(tt.given.result, tt.given.err)
+			mockService := containermock.NewMockContainerService(t)
+
+			if test.want.called {
+				mockService.On("ListContainers", mock.Anything, container.ListContainersParams{
+					All:    test.given.input.All,
+					Limit:  test.given.input.Limit,
+					Size:   test.given.input.Size,
+					Latest: test.given.input.Latest,
+				}).Return(test.given.result, test.given.err)
 			}
 
-			handler := NewToolsHandler(mockSvc)
+			handler := NewToolsHandler(mockService)
 
-			_, output, err := handler.ListContainers(context.Background(), &mcp.CallToolRequest{}, tt.given.input)
+			_, output, err := handler.ListContainers(context.Background(), &mcp.CallToolRequest{}, test.given.input)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
-			if !tt.want.called {
+			if !test.want.called {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.want.containers, output.Containers)
+			assert.Equal(t, test.want.containers, output.Containers)
 		})
 	}
 }

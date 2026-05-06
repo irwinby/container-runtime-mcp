@@ -59,30 +59,30 @@ func TestServiceRemoveImage(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := imagemock.NewMockProviderClient(t)
 
-			if tt.want.called {
+			if test.want.called {
 				mockClient.On("RemoveImage", mock.Anything, providers.RemoveImageParams{
-					Ref:           tt.want.ref,
-					Force:         tt.want.force,
-					PruneChildren: tt.want.pruneChildren,
-					Platform:      tt.want.platform,
-				}).Return(tt.given.err)
+					Ref:           test.want.ref,
+					Force:         test.want.force,
+					PruneChildren: test.want.pruneChildren,
+					Platform:      test.want.platform,
+				}).Return(test.given.err)
 			}
 
 			service := NewService(mockClient, services.Policy{}, zap.NewNop())
 
-			err := service.RemoveImage(context.Background(), tt.given.params)
+			err := service.RemoveImage(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.True(t, tt.want.called)
+			assert.True(t, test.want.called)
 		})
 	}
 }

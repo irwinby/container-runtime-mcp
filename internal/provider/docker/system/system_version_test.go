@@ -2,6 +2,7 @@ package system
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	dockermock "github.com/irwinby/container-runtime-mcp/internal/provider/docker/mock"
@@ -35,33 +36,37 @@ func TestProviderSystemVersion(t *testing.T) {
 				arch:       "arm64",
 			},
 		},
+		"error": {
+			given: given{err: errors.New("docker error")},
+			want:  want{},
+		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := dockermock.NewMockDockerClient(t)
 
 			mockClient.On("ServerVersion", mock.Anything, client.ServerVersionOptions{}).Return(client.ServerVersionResult{
-				Version:    tt.want.version,
-				APIVersion: tt.want.apiVersion,
-				Os:         tt.want.os,
-				Arch:       tt.want.arch,
-			}, tt.given.err)
+				Version:    test.want.version,
+				APIVersion: test.want.apiVersion,
+				Os:         test.want.os,
+				Arch:       test.want.arch,
+			}, test.given.err)
 
 			provider := NewProvider(mockClient, nopTimeout)
 
 			result, err := provider.SystemVersion(context.Background())
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, tt.want.version, result.Version)
-			require.Equal(t, tt.want.apiVersion, result.APIVersion)
-			require.Equal(t, tt.want.os, result.Os)
-			require.Equal(t, tt.want.arch, result.Arch)
+			require.Equal(t, test.want.version, result.Version)
+			require.Equal(t, test.want.apiVersion, result.APIVersion)
+			require.Equal(t, test.want.os, result.Os)
+			require.Equal(t, test.want.arch, result.Arch)
 		})
 	}
 }

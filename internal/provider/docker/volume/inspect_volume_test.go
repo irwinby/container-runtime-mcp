@@ -38,24 +38,24 @@ func TestProviderInspectVolume(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := dockermock.NewMockDockerClient(t)
-			mockClient.On("VolumeInspect", mock.Anything, tt.want.name, client.VolumeInspectOptions{}).
-				Return(client.VolumeInspectResult{Volume: volume.Volume{Name: "vol1", Driver: "local"}}, tt.given.err)
+			mockClient.On("VolumeInspect", mock.Anything, test.want.name, client.VolumeInspectOptions{}).
+				Return(client.VolumeInspectResult{Volume: volume.Volume{Name: "vol1", Driver: "local"}}, test.given.err)
 
 			provider := NewProvider(mockClient, nopTimeout)
 
-			result, err := provider.InspectVolume(context.Background(), tt.given.params)
+			result, err := provider.InspectVolume(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, tt.want.vol.Name, result.Name)
-			require.Equal(t, tt.want.vol.Driver, result.Driver)
+			require.Equal(t, test.want.vol.Name, result.Name)
+			require.Equal(t, test.want.vol.Driver, result.Driver)
 		})
 	}
 }

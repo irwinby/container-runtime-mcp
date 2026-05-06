@@ -42,27 +42,27 @@ func TestHandlerRemoveVolume(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			mockSvc := volumemock.NewMockVolumeService(t)
+			mockService := volumemock.NewMockVolumeService(t)
 
-			if tt.want.called {
-				mockSvc.On("RemoveVolume", mock.Anything, volume.RemoveVolumeParams{
-					Name:  tt.want.name,
-					Force: tt.want.force,
-				}).Return(tt.given.err)
+			if test.want.called {
+				mockService.On("RemoveVolume", mock.Anything, volume.RemoveVolumeParams{
+					Name:  test.want.name,
+					Force: test.want.force,
+				}).Return(test.given.err)
 			}
 
-			handler := NewToolsHandler(mockSvc)
+			handler := NewToolsHandler(mockService)
 
-			_, _, err := handler.RemoveVolume(context.Background(), &mcp.CallToolRequest{}, tt.given.input)
+			_, _, err := handler.RemoveVolume(context.Background(), &mcp.CallToolRequest{}, test.given.input)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
-			if !tt.want.called {
+			if !test.want.called {
 				require.Error(t, err)
 				return
 			}

@@ -60,32 +60,32 @@ func TestHandlerInspectVolume(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			mockSvc := volumemock.NewMockVolumeService(t)
+			mockService := volumemock.NewMockVolumeService(t)
 
-			if tt.want.called {
-				mockSvc.On("InspectVolume", mock.Anything, volume.InspectVolumeParams{
-					Name: tt.want.name,
-				}).Return(tt.given.result, tt.given.err)
+			if test.want.called {
+				mockService.On("InspectVolume", mock.Anything, volume.InspectVolumeParams{
+					Name: test.want.name,
+				}).Return(test.given.result, test.given.err)
 			}
 
-			handler := NewToolsHandler(mockSvc)
+			handler := NewToolsHandler(mockService)
 
-			_, output, err := handler.InspectVolume(context.Background(), &mcp.CallToolRequest{}, tt.given.input)
+			_, output, err := handler.InspectVolume(context.Background(), &mcp.CallToolRequest{}, test.given.input)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
-			if !tt.want.called {
+			if !test.want.called {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.want.vol, output.Volume)
+			assert.Equal(t, test.want.vol, output.Volume)
 		})
 	}
 }

@@ -57,24 +57,24 @@ func TestServiceRemoveContainer(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := containermock.NewMockProviderClient(t)
 
-			if tt.want.called {
+			if test.want.called {
 				mockClient.On("RemoveContainer", mock.Anything, providers.RemoveContainerParams{
-					Name:          tt.want.name,
-					Force:         tt.want.force,
-					RemoveVolumes: tt.want.removeVolumes,
-					RemoveLinks:   tt.want.removeLinks,
-				}).Return(tt.given.err)
+					Name:          test.want.name,
+					Force:         test.want.force,
+					RemoveVolumes: test.want.removeVolumes,
+					RemoveLinks:   test.want.removeLinks,
+				}).Return(test.given.err)
 			}
 
 			service := NewService(mockClient, services.Policy{}, zap.NewNop())
 
-			err := service.RemoveContainer(context.Background(), tt.given.params)
+			err := service.RemoveContainer(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}

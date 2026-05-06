@@ -79,23 +79,24 @@ func TestHandlerRemoveContainer(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			mockSvc := containermock.NewMockContainerService(t)
-			if tt.want.called {
-				mockSvc.On("RemoveContainer", mock.Anything, container.RemoveContainerParams{
-					Name:          tt.want.name,
-					Force:         tt.want.force,
-					RemoveVolumes: tt.want.removeVolumes,
-					RemoveLinks:   tt.want.removeLinks,
-				}).Return(tt.given.err)
+			mockService := containermock.NewMockContainerService(t)
+
+			if test.want.called {
+				mockService.On("RemoveContainer", mock.Anything, container.RemoveContainerParams{
+					Name:          test.want.name,
+					Force:         test.want.force,
+					RemoveVolumes: test.want.removeVolumes,
+					RemoveLinks:   test.want.removeLinks,
+				}).Return(test.given.err)
 			}
 
-			handler := NewToolsHandler(mockSvc)
+			handler := NewToolsHandler(mockService)
 
-			_, _, err := handler.RemoveContainer(context.Background(), &mcp.CallToolRequest{}, tt.given.input)
+			_, _, err := handler.RemoveContainer(context.Background(), &mcp.CallToolRequest{}, test.given.input)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}

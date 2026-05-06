@@ -53,28 +53,29 @@ func TestHandlerPullImage(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			mockSvc := imagemock.NewMockImageService(t)
-			if tt.want.called {
-				mockSvc.On("PullImage", mock.Anything, image.PullImageParams{
-					Ref:      tt.want.ref,
-					All:      tt.want.all,
-					Platform: tt.want.platform,
-				}).Return(tt.given.err)
+			mockService := imagemock.NewMockImageService(t)
+
+			if test.want.called {
+				mockService.On("PullImage", mock.Anything, image.PullImageParams{
+					Ref:      test.want.ref,
+					All:      test.want.all,
+					Platform: test.want.platform,
+				}).Return(test.given.err)
 			}
 
-			handler := NewToolsHandler(mockSvc)
+			handler := NewToolsHandler(mockService)
 
-			_, _, err := handler.PullImage(context.Background(), &mcp.CallToolRequest{}, tt.given.input)
+			_, _, err := handler.PullImage(context.Background(), &mcp.CallToolRequest{}, test.given.input)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.True(t, tt.want.called)
+			assert.True(t, test.want.called)
 		})
 	}
 }

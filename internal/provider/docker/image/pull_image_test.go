@@ -99,27 +99,39 @@ func TestProviderPullImage(t *testing.T) {
 				ref: "nginx:latest",
 			},
 		},
+		"success without platform": {
+			given: given{
+				params: providers.PullImageParams{
+					Ref: "nginx:latest",
+					All: true,
+				},
+			},
+			want: want{
+				ref: "nginx:latest",
+				all: true,
+			},
+		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := dockermock.NewMockDockerClient(t)
 
 			var resp *testPullResponse
-			if tt.given.pullErr == nil {
-				resp = &testPullResponse{waitErr: tt.given.waitErr, closeErr: tt.given.closeErr}
+			if test.given.pullErr == nil {
+				resp = &testPullResponse{waitErr: test.given.waitErr, closeErr: test.given.closeErr}
 			}
 
-			mockClient.On("ImagePull", mock.Anything, tt.want.ref, client.ImagePullOptions{
-				All:       tt.want.all,
-				Platforms: tt.want.platforms,
-			}).Return(resp, tt.given.pullErr)
+			mockClient.On("ImagePull", mock.Anything, test.want.ref, client.ImagePullOptions{
+				All:       test.want.all,
+				Platforms: test.want.platforms,
+			}).Return(resp, test.given.pullErr)
 
 			provider := NewProvider(mockClient, nopTimeout)
 
-			err := provider.PullImage(context.Background(), tt.given.params)
+			err := provider.PullImage(context.Background(), test.given.params)
 
-			if tt.given.pullErr != nil || tt.given.waitErr != nil || tt.given.closeErr != nil {
+			if test.given.pullErr != nil || test.given.waitErr != nil || test.given.closeErr != nil {
 				require.Error(t, err)
 				if resp != nil {
 					require.True(t, resp.closed, "response should be closed")

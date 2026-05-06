@@ -53,28 +53,28 @@ func TestServiceInspectImage(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := imagemock.NewMockProviderClient(t)
 
-			if tt.want.called {
+			if test.want.called {
 				mockClient.On("InspectImage", mock.Anything, providers.InspectImageParams{
-					Ref: tt.want.ref,
-				}).Return(tt.given.result, tt.given.err)
+					Ref: test.want.ref,
+				}).Return(test.given.result, test.given.err)
 			}
 
 			service := NewService(mockClient, services.Policy{}, zap.NewNop())
 
-			result, err := service.InspectImage(context.Background(), tt.given.params)
+			result, err := service.InspectImage(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.True(t, tt.want.called)
-			assert.Equal(t, tt.want.result, result)
+			assert.True(t, test.want.called)
+			assert.Equal(t, test.want.result, result)
 		})
 	}
 }

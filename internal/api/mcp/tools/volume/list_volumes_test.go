@@ -48,29 +48,40 @@ func TestHandlerListVolumes(t *testing.T) {
 			},
 			want: want{called: true},
 		},
+		"dangling false": {
+			given: given{
+				input:  ListVolumesInput{Dangling: false},
+				result: []volume.Volume{{Name: "vol1", Driver: "local"}},
+			},
+			want: want{
+				called:   true,
+				dangling: false,
+				volumes:  []volume.Volume{{Name: "vol1", Driver: "local"}},
+			},
+		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			mockSvc := volumemock.NewMockVolumeService(t)
+			mockService := volumemock.NewMockVolumeService(t)
 
-			if tt.want.called {
-				mockSvc.On("ListVolumes", mock.Anything, volume.ListVolumesParams{
-					Dangling: tt.want.dangling,
-				}).Return(tt.given.result, tt.given.err)
+			if test.want.called {
+				mockService.On("ListVolumes", mock.Anything, volume.ListVolumesParams{
+					Dangling: test.want.dangling,
+				}).Return(test.given.result, test.given.err)
 			}
 
-			handler := NewToolsHandler(mockSvc)
+			handler := NewToolsHandler(mockService)
 
-			_, output, err := handler.ListVolumes(context.Background(), &mcp.CallToolRequest{}, tt.given.input)
+			_, output, err := handler.ListVolumes(context.Background(), &mcp.CallToolRequest{}, test.given.input)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.want.volumes, output.Volumes)
+			assert.Equal(t, test.want.volumes, output.Volumes)
 		})
 	}
 }

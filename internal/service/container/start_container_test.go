@@ -50,21 +50,21 @@ func TestServiceStartContainer(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := containermock.NewMockProviderClient(t)
 
-			if tt.want.called {
+			if test.want.called {
 				mockClient.On("StartContainer", mock.Anything, providers.StartContainerParams{
-					Name: tt.want.name,
-				}).Return(tt.given.err)
+					Name: test.want.name,
+				}).Return(test.given.err)
 			}
 
 			service := NewService(mockClient, services.Policy{}, zap.NewNop())
 
-			err := service.StartContainer(context.Background(), tt.given.params)
+			err := service.StartContainer(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}

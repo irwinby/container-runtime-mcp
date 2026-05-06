@@ -53,30 +53,49 @@ func TestHandlerCreateVolume(t *testing.T) {
 				name:   "vol1",
 			},
 		},
+		"with driver opts and labels": {
+			given: given{
+				input: CreateVolumeInput{
+					Name:       "vol1",
+					Driver:     "local",
+					DriverOpts: map[string]string{"size": "10Gi"},
+					Labels:     map[string]string{"env": "test"},
+				},
+				result: volume.VolumeInspect{Name: "vol1", Driver: "local"},
+			},
+			want: want{
+				called: true,
+				name:   "vol1",
+				driver: "local",
+				vol:    volume.VolumeInspect{Name: "vol1", Driver: "local"},
+			},
+		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			mockSvc := volumemock.NewMockVolumeService(t)
+			mockService := volumemock.NewMockVolumeService(t)
 
-			if tt.want.called {
-				mockSvc.On("CreateVolume", mock.Anything, volume.CreateVolumeParams{
-					Name:   tt.want.name,
-					Driver: tt.want.driver,
-				}).Return(tt.given.result, tt.given.err)
+			if test.want.called {
+				mockService.On("CreateVolume", mock.Anything, volume.CreateVolumeParams{
+					Name:       test.want.name,
+					Driver:     test.want.driver,
+					DriverOpts: test.given.input.DriverOpts,
+					Labels:     test.given.input.Labels,
+				}).Return(test.given.result, test.given.err)
 			}
 
-			handler := NewToolsHandler(mockSvc)
+			handler := NewToolsHandler(mockService)
 
-			_, output, err := handler.CreateVolume(context.Background(), &mcp.CallToolRequest{}, tt.given.input)
+			_, output, err := handler.CreateVolume(context.Background(), &mcp.CallToolRequest{}, test.given.input)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.want.vol, output.Volume)
+			assert.Equal(t, test.want.vol, output.Volume)
 		})
 	}
 }

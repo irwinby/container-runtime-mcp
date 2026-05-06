@@ -46,26 +46,27 @@ func TestHandlerRemoveImage(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			mockSvc := imagemock.NewMockImageService(t)
-			if tt.want.called {
-				mockSvc.On("RemoveImage", mock.Anything, image.RemoveImageParams{
-					Ref: tt.want.ref,
-				}).Return(tt.given.err)
+			mockService := imagemock.NewMockImageService(t)
+
+			if test.want.called {
+				mockService.On("RemoveImage", mock.Anything, image.RemoveImageParams{
+					Ref: test.want.ref,
+				}).Return(test.given.err)
 			}
 
-			handler := NewToolsHandler(mockSvc)
+			handler := NewToolsHandler(mockService)
 
-			_, _, err := handler.RemoveImage(context.Background(), &mcp.CallToolRequest{}, tt.given.input)
+			_, _, err := handler.RemoveImage(context.Background(), &mcp.CallToolRequest{}, test.given.input)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.True(t, tt.want.called)
+			assert.True(t, test.want.called)
 		})
 	}
 }

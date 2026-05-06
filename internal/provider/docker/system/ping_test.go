@@ -2,6 +2,7 @@ package system
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	dockermock "github.com/irwinby/container-runtime-mcp/internal/provider/docker/mock"
@@ -33,30 +34,34 @@ func TestProviderPing(t *testing.T) {
 				experimental: true,
 			},
 		},
+		"error": {
+			given: given{err: errors.New("docker error")},
+			want:  want{},
+		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := dockermock.NewMockDockerClient(t)
 
 			mockClient.On("Ping", mock.Anything, client.PingOptions{}).Return(client.PingResult{
-				APIVersion:   tt.want.apiVersion,
-				OSType:       tt.want.osType,
-				Experimental: tt.want.experimental,
-			}, tt.given.err)
+				APIVersion:   test.want.apiVersion,
+				OSType:       test.want.osType,
+				Experimental: test.want.experimental,
+			}, test.given.err)
 
 			provider := NewProvider(mockClient, nopTimeout)
 			result, err := provider.Ping(context.Background())
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, tt.want.apiVersion, result.APIVersion)
-			require.Equal(t, tt.want.osType, result.OSType)
-			require.Equal(t, tt.want.experimental, result.Experimental)
+			require.Equal(t, test.want.apiVersion, result.APIVersion)
+			require.Equal(t, test.want.osType, result.OSType)
+			require.Equal(t, test.want.experimental, result.Experimental)
 		})
 	}
 }

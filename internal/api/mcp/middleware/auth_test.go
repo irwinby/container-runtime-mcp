@@ -65,21 +65,21 @@ func TestBearerAuth_Enabled(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, "/mcp", nil)
 
-			if tt.authHeader != "" {
-				request.Header.Set("Authorization", tt.authHeader)
+			if test.authHeader != "" {
+				request.Header.Set("Authorization", test.authHeader)
 			}
 
 			middleware.ServeHTTP(recorder, request)
 
-			require.Equal(t, tt.wantCode, recorder.Code)
+			require.Equal(t, test.wantCode, recorder.Code)
 
-			if tt.wantHeader != "" {
-				assert.Equal(t, tt.wantHeader, recorder.Header().Get("WWW-Authenticate"))
+			if test.wantHeader != "" {
+				assert.Equal(t, test.wantHeader, recorder.Header().Get("WWW-Authenticate"))
 			}
 		})
 	}

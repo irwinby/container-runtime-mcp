@@ -143,29 +143,29 @@ func TestProviderExecContainer(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := dockermock.NewMockDockerClient(t)
 
-			mockClient.On("ExecCreate", mock.Anything, tt.given.params.Name, client.ExecCreateOptions{
-				Cmd:          tt.given.params.Cmd,
-				Env:          tt.given.params.Env,
-				WorkingDir:   tt.given.params.WorkingDir,
-				User:         tt.given.params.User,
-				Privileged:   tt.given.params.Privileged,
-				TTY:          tt.given.params.TTY,
-				AttachStdin:  tt.given.params.AttachStdin,
-				AttachStdout: tt.given.params.AttachStdout,
-				AttachStderr: tt.given.params.AttachStderr,
-			}).Return(client.ExecCreateResult{ID: "exec-123"}, tt.given.createErr)
+			mockClient.On("ExecCreate", mock.Anything, test.given.params.Name, client.ExecCreateOptions{
+				Cmd:          test.given.params.Cmd,
+				Env:          test.given.params.Env,
+				WorkingDir:   test.given.params.WorkingDir,
+				User:         test.given.params.User,
+				Privileged:   test.given.params.Privileged,
+				TTY:          test.given.params.TTY,
+				AttachStdin:  test.given.params.AttachStdin,
+				AttachStdout: test.given.params.AttachStdout,
+				AttachStderr: test.given.params.AttachStderr,
+			}).Return(client.ExecCreateResult{ID: "exec-123"}, test.given.createErr)
 
-			if tt.given.createErr == nil {
+			if test.given.createErr == nil {
 				var attachResult client.ExecAttachResult
-				if tt.given.attachErr == nil {
-					server, resp := setupHijackedConn(t, tt.given.params.AttachStdin)
+				if test.given.attachErr == nil {
+					server, resp := setupHijackedConn(t, test.given.params.AttachStdin)
 
 					go func() {
-						_, _ = server.Write(tt.given.attachOutput)
+						_, _ = server.Write(test.given.attachOutput)
 						_ = server.Close()
 					}()
 
@@ -175,28 +175,28 @@ func TestProviderExecContainer(t *testing.T) {
 				}
 
 				mockClient.On("ExecAttach", mock.Anything, "exec-123", client.ExecAttachOptions{
-					TTY: tt.given.params.TTY,
-				}).Return(attachResult, tt.given.attachErr)
+					TTY: test.given.params.TTY,
+				}).Return(attachResult, test.given.attachErr)
 
-				if tt.given.attachErr == nil {
+				if test.given.attachErr == nil {
 					mockClient.On("ExecInspect", mock.Anything, "exec-123", client.ExecInspectOptions{}).
-						Return(tt.given.inspectResult, tt.given.inspectErr)
+						Return(test.given.inspectResult, test.given.inspectErr)
 				}
 			}
 
 			provider := NewProvider(mockClient, nopTimeout)
 
-			result, err := provider.ExecContainer(context.Background(), tt.given.params)
+			result, err := provider.ExecContainer(context.Background(), test.given.params)
 
-			if tt.want.err {
+			if test.want.err {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, tt.want.exitCode, result.ExitCode)
-			require.Equal(t, tt.want.stdout, result.Stdout)
-			require.Equal(t, tt.want.stderr, result.Stderr)
+			require.Equal(t, test.want.exitCode, result.ExitCode)
+			require.Equal(t, test.want.stdout, result.Stdout)
+			require.Equal(t, test.want.stderr, result.Stderr)
 		})
 	}
 }

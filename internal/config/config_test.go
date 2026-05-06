@@ -412,9 +412,60 @@ func TestLoadFromEnv(t *testing.T) {
 				err: true,
 			},
 		},
+		"negative remote operation timeout validate": {
+			given: given{
+				env: map[string]string{
+					"CONTAINER_RUNTIME_MCP_REMOTE_OPERATION_TIMEOUT": "-1m",
+				},
+			},
+			want: want{
+				err: true,
+			},
+		},
+		"invalid duration parse": {
+			given: given{
+				env: map[string]string{
+					"CONTAINER_RUNTIME_MCP_REMOTE_OPERATION_TIMEOUT": "not-a-duration",
+				},
+			},
+			want: want{
+				err: true,
+			},
+		},
+		"non-loopback non-localhost address": {
+			given: given{
+				env: map[string]string{
+					"CONTAINER_RUNTIME_MCP_TRANSPORT":       "http",
+					"CONTAINER_RUNTIME_MCP_HTTP_ADDR":       "192.168.1.1:3000",
+					"CONTAINER_RUNTIME_MCP_HTTP_AUTH_TOKEN": "secret",
+				},
+			},
+			want: want{
+				cfg: &Config{
+					MCPServer: MCPServer{
+						Name:    "Container Runtime",
+						Title:   "",
+						Version: "1.0.0",
+						TransportConfig: TransportConfig{
+							Type: TransportHTTP,
+							HTTP: &HTTPTransportConfig{
+								Addr:           "192.168.1.1:3000",
+								Path:           "/mcp",
+								SessionTimeout: 30 * time.Minute,
+								ReadTimeout:    10 * time.Second,
+								IDLETimeout:    120 * time.Second,
+								AuthToken:      "secret",
+							},
+						},
+					},
+					RemoteOperationTimeout: 10 * time.Minute,
+					LogLevel:               logger.InfoLevel,
+				},
+			},
+		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			// Clear all relevant env vars before each test case
 			// to avoid host environment leaking into assertions.
@@ -436,19 +487,19 @@ func TestLoadFromEnv(t *testing.T) {
 				unsetEnv(t, k)
 			}
 
-			for k, v := range tt.given.env {
+			for k, v := range test.given.env {
 				t.Setenv(k, v)
 			}
 
 			cfg, err := LoadFromEnv(context.Background())
 
-			if tt.want.err {
+			if test.want.err {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.want.cfg, cfg)
+			assert.Equal(t, test.want.cfg, cfg)
 		})
 	}
 }
@@ -456,6 +507,46 @@ func TestLoadFromEnv(t *testing.T) {
 func TestLoadFromEnv_Prefix(t *testing.T) {
 	// Ensure prefix constant includes the separator
 	require.Equal(t, "CONTAINER_RUNTIME_", prefix)
+}
+
+func TestValidate_NegativeRemoteOperationTimeout(t *testing.T) {
+	cfg := &Config{
+		MCPServer: MCPServer{
+			TransportConfig: TransportConfig{Type: TransportStdio},
+		},
+		RemoteOperationTimeout: -1 * time.Minute,
+		LogLevel:               "info",
+	}
+	err := cfg.Validate()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "remote operation timeout must not be negative")
+}
+
+func TestIsLocalHTTPAddr(t *testing.T) {
+	tests := map[string]struct {
+		addr    string
+		local   bool
+		wantErr bool
+	}{
+		"127.0.0.1":     {addr: "127.0.0.1:8080", local: true},
+		"localhost":     {addr: "localhost:8080", local: true},
+		"0.0.0.0":       {addr: "0.0.0.0:8080", local: false},
+		"192.168.1.1":   {addr: "192.168.1.1:8080", local: false},
+		"invalid":       {addr: "not-an-address", wantErr: true},
+		"ipv6 loopback": {addr: "[::1]:8080", local: true},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			local, err := isLocalHTTPAddr(test.addr)
+			if test.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, test.local, local)
+		})
+	}
 }
 
 func TestLoadFromEnv_UnsetEnv(t *testing.T) {

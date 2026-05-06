@@ -76,36 +76,36 @@ func TestServiceContainerLogs(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := containermock.NewMockProviderClient(t)
 
-			if tt.want.called {
+			if test.want.called {
 				mockClient.On("ContainerLogs", mock.Anything, providers.ContainerLogsParams{
-					Name:   tt.want.name,
-					Stdout: tt.given.params.Stdout,
-					Stderr: tt.given.params.Stderr,
-					Since:  tt.given.params.Since,
-					Tail:   tt.given.params.Tail,
-				}).Return(tt.given.result, tt.given.err)
+					Name:   test.want.name,
+					Stdout: test.given.params.Stdout,
+					Stderr: test.given.params.Stderr,
+					Since:  test.given.params.Since,
+					Tail:   test.given.params.Tail,
+				}).Return(test.given.result, test.given.err)
 			}
 
 			service := NewService(mockClient, services.Policy{}, zap.NewNop())
 
-			result, err := service.ContainerLogs(context.Background(), tt.given.params)
+			result, err := service.ContainerLogs(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
-			if !tt.want.called {
+			if !test.want.called {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.want.result, result)
+			assert.Equal(t, test.want.result, result)
 		})
 	}
 }

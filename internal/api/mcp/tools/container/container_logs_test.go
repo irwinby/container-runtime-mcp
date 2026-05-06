@@ -58,37 +58,44 @@ func TestHandlerContainerLogs(t *testing.T) {
 				name:   "web",
 			},
 		},
+		"nil input": {
+			given: given{
+				input: ContainerLogsInput{},
+			},
+			want: want{},
+		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			mockSvc := containermock.NewMockContainerService(t)
-			if tt.want.called {
-				mockSvc.On("ContainerLogs", mock.Anything, container.ContainerLogsParams{
-					Name:   tt.want.name,
+			mockService := containermock.NewMockContainerService(t)
+
+			if test.want.called {
+				mockService.On("ContainerLogs", mock.Anything, container.ContainerLogsParams{
+					Name:   test.want.name,
 					Stdout: true,
 					Stderr: true,
-					Since:  tt.given.input.Since,
-					Tail:   tt.given.input.Tail,
-				}).Return(tt.given.result, tt.given.err)
+					Since:  test.given.input.Since,
+					Tail:   test.given.input.Tail,
+				}).Return(test.given.result, test.given.err)
 			}
 
-			handler := NewToolsHandler(mockSvc)
+			handler := NewToolsHandler(mockService)
 
-			_, output, err := handler.ContainerLogs(context.Background(), &mcp.CallToolRequest{}, tt.given.input)
+			_, output, err := handler.ContainerLogs(context.Background(), &mcp.CallToolRequest{}, test.given.input)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
-			if !tt.want.called {
+			if !test.want.called {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.want.logs, output)
+			assert.Equal(t, test.want.logs, output)
 		})
 	}
 }

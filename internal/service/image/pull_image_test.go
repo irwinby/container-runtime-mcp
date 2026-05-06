@@ -58,29 +58,29 @@ func TestServicePullImage(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := imagemock.NewMockProviderClient(t)
 
-			if tt.want.called {
+			if test.want.called {
 				mockClient.On("PullImage", mock.Anything, providers.PullImageParams{
-					Ref:      tt.want.ref,
-					All:      tt.want.all,
-					Platform: tt.want.platform,
-				}).Return(tt.given.err)
+					Ref:      test.want.ref,
+					All:      test.want.all,
+					Platform: test.want.platform,
+				}).Return(test.given.err)
 			}
 
 			service := NewService(mockClient, services.Policy{}, zap.NewNop())
 
-			err := service.PullImage(context.Background(), tt.given.params)
+			err := service.PullImage(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.True(t, tt.want.called)
+			assert.True(t, test.want.called)
 		})
 	}
 }

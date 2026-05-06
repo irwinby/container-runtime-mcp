@@ -47,22 +47,23 @@ func TestHandlerSystemInfo(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			mockSvc := systemmock.NewMockSystemService(t)
-			mockSvc.On("SystemInfo", mock.Anything).Return(tt.given.result, tt.given.err).Once()
+			mockService := systemmock.NewMockSystemService(t)
 
-			handler := NewToolsHandler(mockSvc)
+			mockService.On("SystemInfo", mock.Anything).Return(test.given.result, test.given.err).Once()
+
+			handler := NewToolsHandler(mockService)
 
 			_, output, err := handler.SystemInfo(context.Background(), nil, SystemInfoInput{})
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.want.info, output.Info)
+			assert.Equal(t, test.want.info, output.Info)
 		})
 	}
 }

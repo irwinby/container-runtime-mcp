@@ -2,6 +2,7 @@ package image
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	providers "github.com/irwinby/container-runtime-mcp/internal/provider"
@@ -47,23 +48,32 @@ func TestProviderRemoveImage(t *testing.T) {
 				platforms:     []ocispec.Platform{*plat},
 			},
 		},
+		"error": {
+			given: given{
+				params: providers.RemoveImageParams{Ref: "nginx"},
+				err:    errors.New("docker error"),
+			},
+			want: want{
+				ref: "nginx",
+			},
+		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := dockermock.NewMockDockerClient(t)
 
-			mockClient.On("ImageRemove", mock.Anything, tt.want.ref, client.ImageRemoveOptions{
-				Force:         tt.want.force,
-				PruneChildren: tt.want.pruneChildren,
-				Platforms:     tt.want.platforms,
-			}).Return(client.ImageRemoveResult{}, tt.given.err)
+			mockClient.On("ImageRemove", mock.Anything, test.want.ref, client.ImageRemoveOptions{
+				Force:         test.want.force,
+				PruneChildren: test.want.pruneChildren,
+				Platforms:     test.want.platforms,
+			}).Return(client.ImageRemoveResult{}, test.given.err)
 
 			provider := NewProvider(mockClient, nopTimeout)
 
-			err := provider.RemoveImage(context.Background(), tt.given.params)
+			err := provider.RemoveImage(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}

@@ -2,6 +2,7 @@ package image
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	providers "github.com/irwinby/container-runtime-mcp/internal/provider"
@@ -38,22 +39,35 @@ func TestProviderTagImage(t *testing.T) {
 				target: "my-nginx:latest",
 			},
 		},
+		"error": {
+			given: given{
+				params: providers.TagImageParams{
+					Source: "nginx:latest",
+					Target: "my-nginx:latest",
+				},
+				err: errors.New("docker error"),
+			},
+			want: want{
+				source: "nginx:latest",
+				target: "my-nginx:latest",
+			},
+		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := dockermock.NewMockDockerClient(t)
 
 			mockClient.On("ImageTag", mock.Anything, client.ImageTagOptions{
-				Source: tt.want.source,
-				Target: tt.want.target,
-			}).Return(client.ImageTagResult{}, tt.given.err)
+				Source: test.want.source,
+				Target: test.want.target,
+			}).Return(client.ImageTagResult{}, test.given.err)
 
 			provider := NewProvider(mockClient, nopTimeout)
 
-			err := provider.TagImage(context.Background(), tt.given.params)
+			err := provider.TagImage(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}

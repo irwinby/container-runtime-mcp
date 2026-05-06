@@ -2,6 +2,7 @@ package image
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	providers "github.com/irwinby/container-runtime-mcp/internal/provider"
@@ -43,31 +44,40 @@ func TestProviderListImages(t *testing.T) {
 				},
 			},
 		},
+		"error": {
+			given: given{
+				params: providers.ListImagesParams{All: true},
+				err:    errors.New("docker error"),
+			},
+			want: want{
+				all: true,
+			},
+		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := dockermock.NewMockDockerClient(t)
 
 			mockClient.On("ImageList", mock.Anything, client.ImageListOptions{
-				All:        tt.want.all,
-				SharedSize: tt.want.sharedSize,
+				All:        test.want.all,
+				SharedSize: test.want.sharedSize,
 			}).Return(client.ImageListResult{
 				Items: []image.Summary{{ID: "img1", RepoTags: []string{"nginx:latest"}}},
-			}, tt.given.err)
+			}, test.given.err)
 
 			provider := NewProvider(mockClient, nopTimeout)
 
-			result, err := provider.ListImages(context.Background(), tt.given.params)
+			result, err := provider.ListImages(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
 			require.Len(t, result, 1)
-			require.Equal(t, tt.want.images[0].ID, result[0].ID)
+			require.Equal(t, test.want.images[0].ID, result[0].ID)
 		})
 	}
 }

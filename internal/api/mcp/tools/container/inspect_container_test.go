@@ -60,26 +60,27 @@ func TestHandlerInspectContainer(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			mockSvc := containermock.NewMockContainerService(t)
-			if tt.want.called {
-				mockSvc.On("InspectContainer", mock.Anything, container.InspectContainerParams{
-					Name: tt.want.name,
-				}).Return(tt.given.result, tt.given.err)
+			mockService := containermock.NewMockContainerService(t)
+
+			if test.want.called {
+				mockService.On("InspectContainer", mock.Anything, container.InspectContainerParams{
+					Name: test.want.name,
+				}).Return(test.given.result, test.given.err)
 			}
 
-			handler := NewToolsHandler(mockSvc)
+			handler := NewToolsHandler(mockService)
 
-			_, output, err := handler.InspectContainer(context.Background(), &mcp.CallToolRequest{}, tt.given.input)
+			_, output, err := handler.InspectContainer(context.Background(), &mcp.CallToolRequest{}, test.given.input)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.want.container, output.Container)
+			assert.Equal(t, test.want.container, output.Container)
 		})
 	}
 }

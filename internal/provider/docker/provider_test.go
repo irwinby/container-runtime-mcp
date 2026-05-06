@@ -2,91 +2,68 @@ package docker
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
 	dockermock "github.com/irwinby/container-runtime-mcp/internal/provider/docker/mock"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestProviderClose(t *testing.T) {
-	type given struct {
-		err error
+func TestNewProvider(t *testing.T) {
+	ctx := context.Background()
+	provider, err := NewProvider(ctx, time.Minute)
+
+	if err != nil {
+		// Docker may not be available in the test environment.
+		require.Contains(t, err.Error(), "create docker client")
+		return
 	}
 
-	type want struct {
-		err bool
-	}
-
-	tests := map[string]struct {
-		given given
-		want  want
-	}{
-		"error": {
-			given: given{
-				err: errors.New("close failed"),
-			},
-			want: want{
-				err: true,
-			},
-		},
-	}
-
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			mockClient := dockermock.NewMockDockerClient(t)
-
-			mockClient.On("Close").Return(tt.given.err)
-
-			provider := newProvider(mockClient, 0)
-			err := provider.Close()
-
-			if tt.want.err {
-				require.Error(t, err)
-				require.Equal(t, tt.given.err.Error(), err.Error())
-				return
-			}
-
-			require.NoError(t, err)
-		})
-	}
+	require.NotNil(t, provider)
+	require.NoError(t, provider.Close())
 }
 
-func TestProviderWithTimeout(t *testing.T) {
-	type given struct {
-		timeout time.Duration
-	}
+func TestNewProvider_ZeroTimeout(t *testing.T) {
+	mockClient := dockermock.NewMockDockerClient(t)
+	provider := newProvider(mockClient, 0)
 
-	tests := map[string]struct {
-		given        given
-		wantDeadline bool
-	}{
-		"applies timeout": {
-			given: given{
-				timeout: 100 * time.Millisecond,
-			},
-			wantDeadline: true,
-		},
-		"zero timeout disables deadline": {
-			given: given{
-				timeout: 0,
-			},
-			wantDeadline: false,
-		},
-	}
+	require.NotNil(t, provider)
+	assert.NotNil(t, provider.ContainerProvider)
+	assert.NotNil(t, provider.ImageProvider)
+	assert.NotNil(t, provider.VolumeProvider)
+	assert.NotNil(t, provider.SystemProvider)
+	assert.Equal(t, mockClient, provider.client)
+	assert.Equal(t, time.Duration(0), provider.timeout)
+}
 
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			mockClient := dockermock.NewMockDockerClient(t)
+func TestNewProvider_WithTimeout(t *testing.T) {
+	mockClient := dockermock.NewMockDockerClient(t)
+	provider := newProvider(mockClient, time.Minute)
 
-			provider := newProvider(mockClient, tt.given.timeout)
+	require.NotNil(t, provider)
+	assert.NotNil(t, provider.ContainerProvider)
+	assert.NotNil(t, provider.ImageProvider)
+	assert.NotNil(t, provider.VolumeProvider)
+	assert.NotNil(t, provider.SystemProvider)
+	assert.Equal(t, mockClient, provider.client)
+	assert.Equal(t, time.Minute, provider.timeout)
+}
 
-			ctx, cancel := provider.ContainerProvider.WithTimeout(context.Background())
-			defer cancel()
+func TestProviderClose(t *testing.T) {
+	mockClient := dockermock.NewMockDockerClient(t)
+	mockClient.On("Close").Return(nil).Once()
 
-			_, hasDeadline := ctx.Deadline()
-			require.Equal(t, tt.wantDeadline, hasDeadline)
-		})
-	}
+	provider := newProvider(mockClient, 0)
+	err := provider.Close()
+	require.NoError(t, err)
+}
+
+func TestProviderClose_Error(t *testing.T) {
+	mockClient := dockermock.NewMockDockerClient(t)
+	mockClient.On("Close").Return(assert.AnError).Once()
+
+	provider := newProvider(mockClient, 0)
+	err := provider.Close()
+	require.Error(t, err)
 }

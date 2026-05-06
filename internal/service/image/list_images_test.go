@@ -40,27 +40,27 @@ func TestServiceListImages(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := imagemock.NewMockProviderClient(t)
 
 			mockClient.On("ListImages", mock.Anything, providers.ListImagesParams{
-				All:        tt.given.params.All,
-				SharedSize: tt.given.params.SharedSize,
-			}).Return(tt.given.result, tt.given.err)
+				All:        test.given.params.All,
+				SharedSize: test.given.params.SharedSize,
+			}).Return(test.given.result, test.given.err)
 
 			service := NewService(mockClient, services.Policy{}, zap.NewNop())
 
-			result, err := service.ListImages(context.Background(), tt.given.params)
+			result, err := service.ListImages(context.Background(), test.given.params)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.True(t, tt.want.called)
-			assert.Equal(t, tt.want.result, result)
+			assert.True(t, test.want.called)
+			assert.Equal(t, test.want.result, result)
 		})
 	}
 }

@@ -140,11 +140,11 @@ func TestNewServer(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			given := tt.given
+			given := test.given
 
-			if tt.want.registered {
+			if test.want.registered {
 				mockHandler := mcpmock.NewMockHandler(t)
 
 				mockHandler.On("Register", mock.Anything).Once()
@@ -156,7 +156,7 @@ func TestNewServer(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.NotNil(t, server)
-			assert.IsType(t, tt.want.server, server)
+			assert.IsType(t, test.want.server, server)
 		})
 	}
 }
@@ -369,6 +369,73 @@ func TestHTTPServer_Run_ContextCancelled(t *testing.T) {
 
 	runErr := <-errs
 	require.NoError(t, runErr)
+}
+
+func TestHTTPServer_Run_ListenError(t *testing.T) {
+	server := &HTTPServer{
+		server: &http.Server{Addr: "invalid:address:too:many:colons"},
+	}
+
+	err := server.Run(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "listen")
+}
+
+func TestHTTPServer_Shutdown_AlreadyClosed(t *testing.T) {
+	mockH := mcpmock.NewMockHandler(t)
+	mockH.On("Register", mock.Anything).Once()
+
+	addr := freeTCPAddr(t)
+
+	server, err := NewServer(
+		config.MCPServer{
+			Name:    "Test",
+			Version: "1.0.0",
+			TransportConfig: config.TransportConfig{
+				Type: config.TransportHTTP,
+				HTTP: &config.HTTPTransportConfig{
+					Addr:           addr,
+					Path:           "/mcp",
+					SessionTimeout: 0,
+				},
+			},
+		},
+		NewHandlers(mockH),
+	)
+	require.NoError(t, err)
+
+	httpServer, ok := server.(*HTTPServer)
+	require.True(t, ok)
+
+	err = httpServer.Shutdown(context.Background())
+	// Shutdown on a non-started server may return nil or ErrServerClosed.
+	// Either is acceptable.
+	if err != nil {
+		assert.ErrorIs(t, err, http.ErrServerClosed)
+	}
+}
+
+func TestNewServer_HTTPWithSessionTimeout(t *testing.T) {
+	mockH := mcpmock.NewMockHandler(t)
+	mockH.On("Register", mock.Anything).Once()
+
+	server, err := NewServer(
+		config.MCPServer{
+			Name:    "Test",
+			Version: "1.0.0",
+			TransportConfig: config.TransportConfig{
+				Type: config.TransportHTTP,
+				HTTP: &config.HTTPTransportConfig{
+					Addr:           "127.0.0.1:8080",
+					Path:           "/mcp",
+					SessionTimeout: 30 * time.Minute,
+				},
+			},
+		},
+		NewHandlers(mockH),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, server)
 }
 
 func TestNewServer_HTTPNilConfig(t *testing.T) {

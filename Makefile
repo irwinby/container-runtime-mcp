@@ -36,6 +36,8 @@ test-race: ## Run all tests with the race detector.
 
 coverage: ## Run tests with coverage profile.
 	go test -covermode=atomic -coverprofile=coverage.out ./...
+	@# Remove generated mock files from coverage report.
+	@sed -i.bak '/\/mock\//d' coverage.out && rm -f coverage.out.bak
 
 coverage-summary: ## Print coverage summary.
 	go tool cover -func=coverage.out

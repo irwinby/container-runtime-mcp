@@ -57,27 +57,28 @@ func TestHandlerInspectImage(t *testing.T) {
 		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			mockSvc := imagemock.NewMockImageService(t)
-			if tt.want.called {
-				mockSvc.On("InspectImage", mock.Anything, image.InspectImageParams{
-					Ref: tt.want.ref,
-				}).Return(tt.given.result, tt.given.err)
+			mockService := imagemock.NewMockImageService(t)
+
+			if test.want.called {
+				mockService.On("InspectImage", mock.Anything, image.InspectImageParams{
+					Ref: test.want.ref,
+				}).Return(test.given.result, test.given.err)
 			}
 
-			handler := NewToolsHandler(mockSvc)
+			handler := NewToolsHandler(mockService)
 
-			_, output, err := handler.InspectImage(context.Background(), &mcp.CallToolRequest{}, tt.given.input)
+			_, output, err := handler.InspectImage(context.Background(), &mcp.CallToolRequest{}, test.given.input)
 
-			if tt.given.err != nil {
+			if test.given.err != nil {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.True(t, tt.want.called)
-			assert.Equal(t, tt.want.image, output.Image)
+			assert.True(t, test.want.called)
+			assert.Equal(t, test.want.image, output.Image)
 		})
 	}
 }

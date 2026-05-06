@@ -99,27 +99,39 @@ func TestProviderPushImage(t *testing.T) {
 				ref: "myapp:latest",
 			},
 		},
+		"success without platform": {
+			given: given{
+				params: providers.PushImageParams{
+					Ref: "myapp:latest",
+					All: true,
+				},
+			},
+			want: want{
+				ref: "myapp:latest",
+				all: true,
+			},
+		},
 	}
 
-	for name, tt := range tests {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockClient := dockermock.NewMockDockerClient(t)
 
 			var resp *testPushResponse
-			if tt.given.pushErr == nil {
-				resp = &testPushResponse{waitErr: tt.given.waitErr, closeErr: tt.given.closeErr}
+			if test.given.pushErr == nil {
+				resp = &testPushResponse{waitErr: test.given.waitErr, closeErr: test.given.closeErr}
 			}
 
-			mockClient.On("ImagePush", mock.Anything, tt.want.ref, client.ImagePushOptions{
-				All:      tt.want.all,
-				Platform: tt.want.platform,
-			}).Return(resp, tt.given.pushErr)
+			mockClient.On("ImagePush", mock.Anything, test.want.ref, client.ImagePushOptions{
+				All:      test.want.all,
+				Platform: test.want.platform,
+			}).Return(resp, test.given.pushErr)
 
 			provider := NewProvider(mockClient, nopTimeout)
 
-			err := provider.PushImage(context.Background(), tt.given.params)
+			err := provider.PushImage(context.Background(), test.given.params)
 
-			if tt.given.pushErr != nil || tt.given.waitErr != nil || tt.given.closeErr != nil {
+			if test.given.pushErr != nil || test.given.waitErr != nil || test.given.closeErr != nil {
 				require.Error(t, err)
 				if resp != nil {
 					require.True(t, resp.closed, "response should be closed")
