@@ -11,6 +11,7 @@ import (
 func (p *Provider) TagImage(ctx context.Context, params providers.TagImageParams) error {
 	ctx, cancel := p.withTimeout(ctx)
 	defer cancel()
+
 	_, err := p.client.ImageTag(ctx, client.ImageTagOptions{
 		Source: params.Source,
 		Target: params.Target,

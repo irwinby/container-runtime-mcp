@@ -12,6 +12,7 @@ import (
 func (p *Provider) RemoveImage(ctx context.Context, params providers.RemoveImageParams) error {
 	ctx, cancel := p.withTimeout(ctx)
 	defer cancel()
+
 	opts := client.ImageRemoveOptions{
 		Force:         params.Force,
 		PruneChildren: params.PruneChildren,

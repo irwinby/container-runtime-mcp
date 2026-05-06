@@ -1,4 +1,4 @@
-.PHONY: all build run run-http test test-race fmt vet imports lint generate tidy clean image-build image-run image-run-http image-run-http-read-only help
+.PHONY: all build run run-http test test-race fmt vet imports lint golangci-lint generate tidy clean image-build image-run image-run-http image-run-http-read-only help
 
 BINARY_NAME := container-runtime-mcp
 BUILD_FLAGS := -o $(BINARY_NAME) .
@@ -43,7 +43,12 @@ vet: ## Run go vet on all packages.
 imports: ## Organize imports with goimports.
 	GOWORK=off go -C tools run golang.org/x/tools/cmd/goimports -w ..
 
-lint: fmt imports vet ## Run fmt, imports, and vet.
+lint: fmt imports vet golangci-lint ## Run fmt, imports, vet, and golangci-lint.
+
+golangci-lint: ## Run golangci-lint.
+	@mkdir -p bin
+	GOWORK=off go -C tools build -o $(CURDIR)/bin/golangci-lint github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+	$(CURDIR)/bin/golangci-lint run ./...
 
 generate: ## Generate mocks with mockery.
 	go run github.com/vektra/mockery/v2@v2.53.6 --config .mockery.yaml

@@ -11,6 +11,7 @@ import (
 func (p *Provider) ListContainers(ctx context.Context, params providers.ListContainersParams) ([]providers.Container, error) {
 	ctx, cancel := p.withTimeout(ctx)
 	defer cancel()
+
 	result, err := p.client.ContainerList(ctx, client.ContainerListOptions{
 		All:    params.All,
 		Limit:  params.Limit,

@@ -35,13 +35,13 @@ func (s *Service) ListVolumes(ctx context.Context, params ListVolumesParams) ([]
 
 	volumes := make([]Volume, 0, len(result))
 
-	for _, v := range result {
+	for _, volume := range result {
 		volumes = append(volumes, Volume{
-			Name:       v.Name,
-			Driver:     v.Driver,
-			Mountpoint: v.Mountpoint,
-			Labels:     v.Labels,
-			Scope:      v.Scope,
+			Name:       volume.Name,
+			Driver:     volume.Driver,
+			Mountpoint: volume.Mountpoint,
+			Labels:     volume.Labels,
+			Scope:      volume.Scope,
 		})
 	}
 

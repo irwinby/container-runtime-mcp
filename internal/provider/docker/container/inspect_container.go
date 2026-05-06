@@ -11,6 +11,7 @@ import (
 func (p *Provider) InspectContainer(ctx context.Context, params providers.InspectContainerParams) (providers.ContainerInspect, error) {
 	ctx, cancel := p.withTimeout(ctx)
 	defer cancel()
+
 	result, err := p.client.ContainerInspect(ctx, params.Name, client.ContainerInspectOptions{})
 	if err != nil {
 		return providers.ContainerInspect{}, fmt.Errorf("inspect docker container: %w", err)

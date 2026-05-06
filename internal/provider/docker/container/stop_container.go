@@ -11,6 +11,7 @@ import (
 func (p *Provider) StopContainer(ctx context.Context, params providers.StopContainerParams) error {
 	ctx, cancel := p.withTimeout(ctx)
 	defer cancel()
+
 	opts := client.ContainerStopOptions{}
 
 	if params.Signal != "" {

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"strings"
 
 	"github.com/irwinby/container-runtime-mcp/internal/api/mcp/middleware"
 	"github.com/irwinby/container-runtime-mcp/internal/config"
@@ -22,22 +21,6 @@ type HTTPServer struct {
 func NewHTTPServer(cfg config.MCPServer, handlers Handlers, opts ...Option) (*HTTPServer, error) {
 	if cfg.TransportConfig.HTTP == nil {
 		return nil, fmt.Errorf("http transport configuration is nil")
-	}
-
-	if !strings.HasPrefix(cfg.TransportConfig.HTTP.Path, "/") {
-		return nil, fmt.Errorf("http path must start with /")
-	}
-
-	if cfg.TransportConfig.HTTP.SessionTimeout < 0 {
-		return nil, fmt.Errorf("http session timeout must not be negative")
-	}
-
-	if cfg.TransportConfig.HTTP.ReadTimeout < 0 {
-		return nil, fmt.Errorf("http read timeout must not be negative")
-	}
-
-	if cfg.TransportConfig.HTTP.IDLETimeout < 0 {
-		return nil, fmt.Errorf("http idle timeout must not be negative")
 	}
 
 	serverOpts := &Options{}
@@ -91,7 +74,10 @@ func (s *HTTPServer) Run(ctx context.Context) error {
 		return fmt.Errorf("listen %s: %w", s.server.Addr, err)
 	}
 
-	defer listener.Close()
+	defer func() {
+		// Listener close errors after serve are not critical.
+		_ = listener.Close()
+	}()
 
 	errs := make(chan error, 1)
 

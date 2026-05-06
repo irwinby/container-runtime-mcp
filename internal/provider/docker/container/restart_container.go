@@ -11,6 +11,7 @@ import (
 func (p *Provider) RestartContainer(ctx context.Context, params providers.RestartContainerParams) error {
 	ctx, cancel := p.withTimeout(ctx)
 	defer cancel()
+
 	opts := client.ContainerRestartOptions{}
 
 	if params.Signal != "" {

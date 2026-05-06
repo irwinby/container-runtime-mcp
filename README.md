@@ -506,10 +506,16 @@ Format code:
 make fmt
 ```
 
-Run all linting checks:
+Run all linting checks (formatting, imports, vet, and golangci-lint):
 
 ```sh
 make lint
+```
+
+Run only golangci-lint:
+
+```sh
+make golangci-lint
 ```
 
 Tidy module dependencies:

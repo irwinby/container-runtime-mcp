@@ -113,8 +113,9 @@ func LoadFromEnv(ctx context.Context) (*Config, error) {
 		return nil, fmt.Errorf("process config from env: %w", err)
 	}
 
-	if err := cfg.Validate(); err != nil {
-		return nil, err
+	err = cfg.Validate()
+	if err != nil {
+		return nil, fmt.Errorf("validate config: %w", err)
 	}
 
 	return &cfg, nil

@@ -1,0 +1,50 @@
+version: "2"
+
+run:
+  go: "1.26.2"
+  timeout: 5m
+  tests: true
+
+linters:
+  default: standard
+  enable:
+    - copyloopvar
+    - gocritic
+    - gocyclo
+    - gosec
+    - intrange
+    - misspell
+    - unconvert
+    - unparam
+    - usestdlibvars
+  settings:
+    gocyclo:
+      min-complexity: 15
+    gosec:
+      excludes:
+        - G115
+    misspell:
+      locale: US
+  exclusions:
+    generated: lax
+    paths:
+      - mock
+      - vendor
+      - third_party
+    rules:
+      - path: ".*_test\\.go"
+        linters:
+          - gocyclo
+          - gosec
+          - errcheck
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - mock
+      - vendor
+      - third_party

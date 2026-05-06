@@ -26,16 +26,19 @@ func (p *Provider) ContainerLogs(ctx context.Context, params providers.Container
 		return providers.ContainerLogsResult{}, fmt.Errorf("get docker container logs: %w", err)
 	}
 
-	defer result.Close()
+	defer func() {
+		// ReadCloser close errors after reading are not critical.
+		_ = result.Close()
+	}()
 
-	var stdoutBuf, stderrBuf bytes.Buffer
+	var stdoutBuffer, stderrBuffer bytes.Buffer
 
-	_, err = stdcopy.StdCopy(&stdoutBuf, &stderrBuf, result)
+	_, err = stdcopy.StdCopy(&stdoutBuffer, &stderrBuffer, result)
 	if err != nil {
 		return providers.ContainerLogsResult{}, fmt.Errorf("read container logs: %w", err)
 	}
 
 	return providers.NewContainerLogsResult().
-		SetStdout(stdoutBuf.String()).
-		SetStderr(stderrBuf.String()), nil
+		SetStdout(stdoutBuffer.String()).
+		SetStderr(stderrBuffer.String()), nil
 }

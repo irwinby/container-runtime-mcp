@@ -11,6 +11,7 @@ import (
 func (p *Provider) Ping(ctx context.Context) (providers.PingResult, error) {
 	ctx, cancel := p.withTimeout(ctx)
 	defer cancel()
+
 	result, err := p.client.Ping(ctx, client.PingOptions{})
 	if err != nil {
 		return providers.PingResult{}, fmt.Errorf("ping docker: %w", err)

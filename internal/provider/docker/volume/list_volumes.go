@@ -13,6 +13,7 @@ func (p *Provider) ListVolumes(ctx context.Context, params providers.ListVolumes
 	defer cancel()
 
 	filters := client.Filters{}
+
 	if params.Dangling {
 		filters = filters.Add("dangling", "true")
 	}
@@ -26,13 +27,13 @@ func (p *Provider) ListVolumes(ctx context.Context, params providers.ListVolumes
 
 	volumes := make([]providers.Volume, 0, len(result.Items))
 
-	for _, v := range result.Items {
+	for _, item := range result.Items {
 		volumes = append(volumes, providers.NewVolume().
-			SetName(v.Name).
-			SetDriver(v.Driver).
-			SetMountpoint(v.Mountpoint).
-			SetLabels(v.Labels).
-			SetScope(v.Scope))
+			SetName(item.Name).
+			SetDriver(item.Driver).
+			SetMountpoint(item.Mountpoint).
+			SetLabels(item.Labels).
+			SetScope(item.Scope))
 	}
 
 	return volumes, nil

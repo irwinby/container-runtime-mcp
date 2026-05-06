@@ -37,19 +37,22 @@ func (p *Provider) ExecContainer(ctx context.Context, params providers.ExecConta
 	if err != nil {
 		return providers.ExecContainerResult{}, fmt.Errorf("attach docker exec: %w", err)
 	}
+
 	defer attachResult.Close()
 
-	var stdoutBuf, stderrBuf bytes.Buffer
+	var stdoutBuffer, stderrBuffer bytes.Buffer
 	var readErr error
 
 	var wg sync.WaitGroup
 	wg.Add(1)
+
 	go func() {
 		defer wg.Done()
+
 		if params.TTY {
-			_, readErr = stdoutBuf.ReadFrom(attachResult.Reader)
+			_, readErr = stdoutBuffer.ReadFrom(attachResult.Reader)
 		} else {
-			_, readErr = stdcopy.StdCopy(&stdoutBuf, &stderrBuf, attachResult.Reader)
+			_, readErr = stdcopy.StdCopy(&stdoutBuffer, &stderrBuffer, attachResult.Reader)
 		}
 	}()
 
@@ -66,6 +69,7 @@ func (p *Provider) ExecContainer(ctx context.Context, params providers.ExecConta
 	}
 
 	wg.Wait()
+
 	if readErr != nil {
 		if params.TTY {
 			return providers.ExecContainerResult{}, fmt.Errorf("read exec tty output: %w", readErr)
@@ -81,7 +85,7 @@ func (p *Provider) ExecContainer(ctx context.Context, params providers.ExecConta
 	return providers.ExecContainerResult{
 		ExecID:   createResult.ID,
 		ExitCode: inspectResult.ExitCode,
-		Stdout:   stdoutBuf.String(),
-		Stderr:   stderrBuf.String(),
+		Stdout:   stdoutBuffer.String(),
+		Stderr:   stderrBuffer.String(),
 	}, nil
 }

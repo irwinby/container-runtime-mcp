@@ -11,6 +11,7 @@ import (
 func (p *Provider) SystemVersion(ctx context.Context) (providers.SystemVersion, error) {
 	ctx, cancel := p.withTimeout(ctx)
 	defer cancel()
+
 	result, err := p.client.ServerVersion(ctx, client.ServerVersionOptions{})
 	if err != nil {
 		return providers.SystemVersion{}, fmt.Errorf("get docker system version: %w", err)
