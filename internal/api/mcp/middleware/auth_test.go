@@ -30,38 +30,42 @@ func TestBearerAuth_Enabled(t *testing.T) {
 
 	middleware := Auth("secret-token", next)
 
-	tests := map[string]struct {
+	type given struct {
 		authHeader string
-		wantCode   int
-		wantHeader string
+	}
+
+	type want struct {
+		code   int
+		header string
+	}
+
+	tests := map[string]struct {
+		given given
+		want  want
 	}{
 		"no header": {
-			authHeader: "",
-			wantCode:   http.StatusUnauthorized,
-			wantHeader: "Bearer",
+			given: given{authHeader: ""},
+			want:  want{code: http.StatusUnauthorized, header: "Bearer"},
 		},
 		"wrong scheme": {
-			authHeader: "Basic YWRtaW46c2VjcmV0",
-			wantCode:   http.StatusUnauthorized,
-			wantHeader: "Bearer",
+			given: given{authHeader: "Basic YWRtaW46c2VjcmV0"},
+			want:  want{code: http.StatusUnauthorized, header: "Bearer"},
 		},
 		"missing token": {
-			authHeader: "Bearer",
-			wantCode:   http.StatusUnauthorized,
-			wantHeader: "Bearer",
+			given: given{authHeader: "Bearer"},
+			want:  want{code: http.StatusUnauthorized, header: "Bearer"},
 		},
 		"wrong token": {
-			authHeader: "Bearer wrong-token",
-			wantCode:   http.StatusUnauthorized,
-			wantHeader: "Bearer",
+			given: given{authHeader: "Bearer wrong-token"},
+			want:  want{code: http.StatusUnauthorized, header: "Bearer"},
 		},
 		"correct token": {
-			authHeader: "Bearer secret-token",
-			wantCode:   http.StatusOK,
+			given: given{authHeader: "Bearer secret-token"},
+			want:  want{code: http.StatusOK},
 		},
 		"correct token case insensitive scheme": {
-			authHeader: "bearer secret-token",
-			wantCode:   http.StatusOK,
+			given: given{authHeader: "bearer secret-token"},
+			want:  want{code: http.StatusOK},
 		},
 	}
 
@@ -70,16 +74,16 @@ func TestBearerAuth_Enabled(t *testing.T) {
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, "/mcp", nil)
 
-			if test.authHeader != "" {
-				request.Header.Set("Authorization", test.authHeader)
+			if test.given.authHeader != "" {
+				request.Header.Set("Authorization", test.given.authHeader)
 			}
 
 			middleware.ServeHTTP(recorder, request)
 
-			require.Equal(t, test.wantCode, recorder.Code)
+			require.Equal(t, test.want.code, recorder.Code)
 
-			if test.wantHeader != "" {
-				assert.Equal(t, test.wantHeader, recorder.Header().Get("WWW-Authenticate"))
+			if test.want.header != "" {
+				assert.Equal(t, test.want.header, recorder.Header().Get("WWW-Authenticate"))
 			}
 		})
 	}

@@ -1,72 +1,18 @@
 package container
 
 import (
-	"bufio"
 	"bytes"
 	"context"
-	"encoding/binary"
 	"errors"
-	"net"
 	"testing"
 
 	providers "github.com/irwinby/container-runtime-mcp/internal/provider"
 	dockermock "github.com/irwinby/container-runtime-mcp/internal/provider/docker/mock"
+	testdocker "github.com/irwinby/container-runtime-mcp/internal/testing/docker"
 	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
-
-// writeStdFrame writes a Docker multiplexed stream frame.
-// streamType: 1 = stdout, 2 = stderr.
-func writeStdFrame(buf *bytes.Buffer, streamType byte, data []byte) {
-	var header [8]byte
-	header[0] = streamType
-	binary.BigEndian.PutUint32(header[4:], uint32(len(data)))
-	buf.Write(header[:])
-	buf.Write(data)
-}
-
-func setupHijackedConn(t *testing.T, attachStdin bool) (server net.Conn, resp client.HijackedResponse) {
-	t.Helper()
-
-	if !attachStdin {
-		server, clientConn := net.Pipe()
-		t.Cleanup(func() { server.Close(); clientConn.Close() })
-		return server, client.HijackedResponse{
-			Conn:   clientConn,
-			Reader: bufio.NewReader(clientConn),
-		}
-	}
-
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
-	t.Cleanup(func() { listener.Close() })
-
-	serverCh := make(chan net.Conn, 1)
-	go func() {
-		s, err := listener.Accept()
-		if err != nil {
-			close(serverCh)
-			return
-		}
-		serverCh <- s
-	}()
-
-	clientConn, err := net.Dial("tcp", listener.Addr().String())
-	require.NoError(t, err)
-
-	server = <-serverCh
-	require.NotNil(t, server)
-	t.Cleanup(func() {
-		server.Close()
-		clientConn.Close()
-	})
-
-	return server, client.HijackedResponse{
-		Conn:   clientConn,
-		Reader: bufio.NewReader(clientConn),
-	}
-}
 
 func TestProviderExecContainer(t *testing.T) {
 	type given struct {
@@ -99,8 +45,8 @@ func TestProviderExecContainer(t *testing.T) {
 				},
 				attachOutput: func() []byte {
 					var buf bytes.Buffer
-					writeStdFrame(&buf, 1, []byte("hello"))
-					writeStdFrame(&buf, 2, []byte("warn"))
+					testdocker.WriteFrame(&buf, 1, []byte("hello"))
+					testdocker.WriteFrame(&buf, 2, []byte("warn"))
 					return buf.Bytes()
 				}(),
 				inspectResult: client.ExecInspectResult{ExitCode: 0},
@@ -161,8 +107,9 @@ func TestProviderExecContainer(t *testing.T) {
 
 			if test.given.createErr == nil {
 				var attachResult client.ExecAttachResult
+
 				if test.given.attachErr == nil {
-					server, resp := setupHijackedConn(t, test.given.params.AttachStdin)
+					server, response := testdocker.SetupHijackedConn(t, test.given.params.AttachStdin)
 
 					go func() {
 						_, _ = server.Write(test.given.attachOutput)
@@ -170,7 +117,7 @@ func TestProviderExecContainer(t *testing.T) {
 					}()
 
 					attachResult = client.ExecAttachResult{
-						HijackedResponse: resp,
+						HijackedResponse: response,
 					}
 				}
 

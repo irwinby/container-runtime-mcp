@@ -2,7 +2,6 @@ package mcp
 
 import (
 	"context"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,36 +9,12 @@ import (
 
 	mcpmock "github.com/irwinby/container-runtime-mcp/internal/api/mcp/mock"
 	"github.com/irwinby/container-runtime-mcp/internal/config"
+	testnet "github.com/irwinby/container-runtime-mcp/internal/testing/net"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
-
-func freeTCPAddr(t *testing.T) string {
-	t.Helper()
-
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
-
-	addr := listener.Addr().String()
-	require.NoError(t, listener.Close())
-
-	return addr
-}
-
-func requireTCPListening(t *testing.T, addr string) {
-	t.Helper()
-
-	require.Eventually(t, func() bool {
-		conn, err := net.DialTimeout("tcp", addr, 50*time.Millisecond)
-		if err != nil {
-			return false
-		}
-
-		return conn.Close() == nil
-	}, 2*time.Second, 10*time.Millisecond)
-}
 
 func TestNewHandlers(t *testing.T) {
 	h1 := mcpmock.NewMockHandler(t)
@@ -278,7 +253,7 @@ func TestHTTPServer_Shutdown(t *testing.T) {
 	mockH := mcpmock.NewMockHandler(t)
 	mockH.On("Register", mock.Anything).Once()
 
-	addr := freeTCPAddr(t)
+	addr := testnet.FreeTCPAddr(t)
 
 	server, err := NewServer(
 		config.MCPServer{
@@ -307,7 +282,7 @@ func TestHTTPServer_Shutdown(t *testing.T) {
 	}()
 
 	// Wait for the server to start listening.
-	requireTCPListening(t, addr)
+	testnet.RequireTCPListening(t, addr)
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -324,7 +299,7 @@ func TestHTTPServer_Run_ContextCancelled(t *testing.T) {
 
 	mockHandler.On("Register", mock.Anything).Once()
 
-	addr := freeTCPAddr(t)
+	addr := testnet.FreeTCPAddr(t)
 
 	server, err := NewServer(
 		config.MCPServer{
@@ -355,7 +330,7 @@ func TestHTTPServer_Run_ContextCancelled(t *testing.T) {
 	}()
 
 	// Wait for the server to start listening.
-	requireTCPListening(t, addr)
+	testnet.RequireTCPListening(t, addr)
 
 	cancel()
 
@@ -385,7 +360,7 @@ func TestHTTPServer_Shutdown_AlreadyClosed(t *testing.T) {
 	mockH := mcpmock.NewMockHandler(t)
 	mockH.On("Register", mock.Anything).Once()
 
-	addr := freeTCPAddr(t)
+	addr := testnet.FreeTCPAddr(t)
 
 	server, err := NewServer(
 		config.MCPServer{

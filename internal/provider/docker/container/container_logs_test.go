@@ -3,91 +3,76 @@ package container
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
 	"errors"
-	"io"
 	"testing"
 
 	providers "github.com/irwinby/container-runtime-mcp/internal/provider"
 	dockermock "github.com/irwinby/container-runtime-mcp/internal/provider/docker/mock"
+	testdocker "github.com/irwinby/container-runtime-mcp/internal/testing/docker"
+	testio "github.com/irwinby/container-runtime-mcp/internal/testing/io"
 	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-func writeDockerLogFrame(buf *bytes.Buffer, streamType byte, data []byte) {
-	var header [8]byte
-	header[0] = streamType
-	binary.BigEndian.PutUint32(header[4:], uint32(len(data)))
-	buf.Write(header[:])
-	buf.Write(data)
-}
-
-type testReadCloser struct {
-	data   []byte
-	closed bool
-}
-
-func (r *testReadCloser) Read(p []byte) (int, error) {
-	if len(r.data) == 0 {
-		return 0, io.EOF
-	}
-	n := copy(p, r.data)
-	r.data = r.data[n:]
-	return n, nil
-}
-
-func (r *testReadCloser) Close() error {
-	r.closed = true
-	return nil
-}
-
 func TestProviderContainerLogs(t *testing.T) {
+	type given struct {
+		params    providers.ContainerLogsParams
+		clientErr error
+		logData   []byte
+	}
+
+	type want struct {
+		stdout string
+		stderr string
+		err    bool
+	}
+
 	tests := map[string]struct {
-		params       providers.ContainerLogsParams
-		clientErr    error
-		logData      []byte
-		wantStdout   string
-		wantStderr   string
-		wantErr      bool
-		wantStderrOk bool
+		given given
+		want  want
 	}{
 		"success": {
-			params: providers.ContainerLogsParams{
-				Name:   "web",
-				Stdout: true,
-				Stderr: true,
+			given: given{
+				params: providers.ContainerLogsParams{
+					Name:   "web",
+					Stdout: true,
+					Stderr: true,
+				},
+				logData: func() []byte {
+					var buf bytes.Buffer
+					testdocker.WriteFrame(&buf, 1, []byte("hello"))
+					testdocker.WriteFrame(&buf, 2, []byte("warn"))
+					return buf.Bytes()
+				}(),
 			},
-			logData: func() []byte {
-				var buf bytes.Buffer
-				writeDockerLogFrame(&buf, 1, []byte("hello"))
-				writeDockerLogFrame(&buf, 2, []byte("warn"))
-				return buf.Bytes()
-			}(),
-			wantStdout: "hello",
-			wantStderr: "warn",
+			want: want{stdout: "hello", stderr: "warn"},
 		},
 		"client error": {
-			params: providers.ContainerLogsParams{
-				Name:   "web",
-				Stdout: true,
-				Stderr: true,
+			given: given{
+				params: providers.ContainerLogsParams{
+					Name:   "web",
+					Stdout: true,
+					Stderr: true,
+				},
+				clientErr: errors.New("docker error"),
 			},
-			clientErr: errors.New("docker error"),
-			wantErr:   true,
+			want: want{err: true},
 		},
 		"stdout only": {
-			params: providers.ContainerLogsParams{
-				Name:   "web",
-				Stdout: true,
-				Stderr: false,
+			given: given{
+				params: providers.ContainerLogsParams{
+					Name:   "web",
+					Stdout: true,
+					Stderr: false,
+				},
+				logData: func() []byte {
+					var buf bytes.Buffer
+					testdocker.WriteFrame(&buf, 1, []byte("hello"))
+					return buf.Bytes()
+				}(),
 			},
-			logData: func() []byte {
-				var buf bytes.Buffer
-				writeDockerLogFrame(&buf, 1, []byte("hello"))
-				return buf.Bytes()
-			}(),
-			wantStdout: "hello",
+			want: want{stdout: "hello"},
 		},
 	}
 
@@ -95,34 +80,35 @@ func TestProviderContainerLogs(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			mockClient := dockermock.NewMockDockerClient(t)
 
-			var resp *testReadCloser
-			if test.clientErr == nil {
-				resp = &testReadCloser{data: test.logData}
+			var response *testio.ReadCloser
+
+			if test.given.clientErr == nil {
+				response = &testio.ReadCloser{Data: test.given.logData}
 			}
 
-			mockClient.On("ContainerLogs", mock.Anything, test.params.Name, client.ContainerLogsOptions{
-				ShowStdout: test.params.Stdout,
-				ShowStderr: test.params.Stderr,
-				Since:      test.params.Since,
-				Timestamps: test.params.Timestamps,
-				Tail:       test.params.Tail,
+			mockClient.On("ContainerLogs", mock.Anything, test.given.params.Name, client.ContainerLogsOptions{
+				ShowStdout: test.given.params.Stdout,
+				ShowStderr: test.given.params.Stderr,
+				Since:      test.given.params.Since,
+				Timestamps: test.given.params.Timestamps,
+				Tail:       test.given.params.Tail,
 				Follow:     false,
-			}).Return(resp, test.clientErr)
+			}).Return(response, test.given.clientErr)
 
 			provider := NewProvider(mockClient, nopTimeout)
 
-			result, err := provider.ContainerLogs(context.Background(), test.params)
+			result, err := provider.ContainerLogs(context.Background(), test.given.params)
 
-			if test.wantErr {
+			if test.want.err {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, test.wantStdout, result.Stdout)
-			require.Equal(t, test.wantStderr, result.Stderr)
-			require.NotNil(t, resp)
-			require.True(t, resp.closed)
+			require.Equal(t, test.want.stdout, result.Stdout)
+			require.Equal(t, test.want.stderr, result.Stderr)
+			require.NotNil(t, response)
+			require.True(t, response.Closed)
 		})
 	}
 }

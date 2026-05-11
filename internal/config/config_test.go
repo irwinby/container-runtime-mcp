@@ -2,29 +2,14 @@ package config
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
+	"github.com/irwinby/container-runtime-mcp/internal/testing/env"
 	"github.com/irwinby/container-runtime-mcp/pkg/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// unsetEnv unsets an environment variable and registers a cleanup
-// that restores the original value after the test.
-func unsetEnv(t *testing.T, key string) {
-	t.Helper()
-	old, ok := os.LookupEnv(key)
-	os.Unsetenv(key)
-	t.Cleanup(func() {
-		if ok {
-			os.Setenv(key, old)
-		} else {
-			os.Unsetenv(key)
-		}
-	})
-}
 
 func TestLoadFromEnv(t *testing.T) {
 	type given struct {
@@ -64,6 +49,13 @@ func TestLoadFromEnv(t *testing.T) {
 					},
 					RemoteOperationTimeout: 10 * time.Minute,
 					LogLevel:               logger.InfoLevel,
+					Telemetry: TelemetryConfig{
+						Enabled:      false,
+						Addr:         "127.0.0.1:9090",
+						PPROFEnabled: false,
+						ReadTimeout:  10 * time.Second,
+						IDLETimeout:  120 * time.Second,
+					},
 				},
 			},
 		},
@@ -96,6 +88,13 @@ func TestLoadFromEnv(t *testing.T) {
 					},
 					RemoteOperationTimeout: 5 * time.Minute,
 					LogLevel:               logger.InfoLevel,
+					Telemetry: TelemetryConfig{
+						Enabled:      false,
+						Addr:         "127.0.0.1:9090",
+						PPROFEnabled: false,
+						ReadTimeout:  10 * time.Second,
+						IDLETimeout:  120 * time.Second,
+					},
 				},
 			},
 		},
@@ -138,6 +137,13 @@ func TestLoadFromEnv(t *testing.T) {
 					},
 					RemoteOperationTimeout: 10 * time.Minute,
 					LogLevel:               logger.InfoLevel,
+					Telemetry: TelemetryConfig{
+						Enabled:      false,
+						Addr:         "127.0.0.1:9090",
+						PPROFEnabled: false,
+						ReadTimeout:  10 * time.Second,
+						IDLETimeout:  120 * time.Second,
+					},
 				},
 			},
 		},
@@ -171,6 +177,13 @@ func TestLoadFromEnv(t *testing.T) {
 					},
 					RemoteOperationTimeout: 10 * time.Minute,
 					LogLevel:               logger.InfoLevel,
+					Telemetry: TelemetryConfig{
+						Enabled:      false,
+						Addr:         "127.0.0.1:9090",
+						PPROFEnabled: false,
+						ReadTimeout:  10 * time.Second,
+						IDLETimeout:  120 * time.Second,
+					},
 				},
 			},
 		},
@@ -201,6 +214,13 @@ func TestLoadFromEnv(t *testing.T) {
 					RemoteOperationTimeout: 10 * time.Minute,
 					LogLevel:               logger.InfoLevel,
 					ReadOnly:               true,
+					Telemetry: TelemetryConfig{
+						Enabled:      false,
+						Addr:         "127.0.0.1:9090",
+						PPROFEnabled: false,
+						ReadTimeout:  10 * time.Second,
+						IDLETimeout:  120 * time.Second,
+					},
 				},
 			},
 		},
@@ -297,6 +317,13 @@ func TestLoadFromEnv(t *testing.T) {
 					},
 					RemoteOperationTimeout: 10 * time.Minute,
 					LogLevel:               logger.InfoLevel,
+					Telemetry: TelemetryConfig{
+						Enabled:      false,
+						Addr:         "127.0.0.1:9090",
+						PPROFEnabled: false,
+						ReadTimeout:  10 * time.Second,
+						IDLETimeout:  120 * time.Second,
+					},
 				},
 			},
 		},
@@ -329,6 +356,13 @@ func TestLoadFromEnv(t *testing.T) {
 					RemoteOperationTimeout: 10 * time.Minute,
 					LogLevel:               logger.InfoLevel,
 					ReadOnly:               true,
+					Telemetry: TelemetryConfig{
+						Enabled:      false,
+						Addr:         "127.0.0.1:9090",
+						PPROFEnabled: false,
+						ReadTimeout:  10 * time.Second,
+						IDLETimeout:  120 * time.Second,
+					},
 				},
 			},
 		},
@@ -359,6 +393,13 @@ func TestLoadFromEnv(t *testing.T) {
 					},
 					RemoteOperationTimeout: 10 * time.Minute,
 					LogLevel:               logger.InfoLevel,
+					Telemetry: TelemetryConfig{
+						Enabled:      false,
+						Addr:         "127.0.0.1:9090",
+						PPROFEnabled: false,
+						ReadTimeout:  10 * time.Second,
+						IDLETimeout:  120 * time.Second,
+					},
 				},
 			},
 		},
@@ -399,6 +440,13 @@ func TestLoadFromEnv(t *testing.T) {
 					},
 					RemoteOperationTimeout: 10 * time.Minute,
 					LogLevel:               logger.DebugLevel,
+					Telemetry: TelemetryConfig{
+						Enabled:      false,
+						Addr:         "127.0.0.1:9090",
+						PPROFEnabled: false,
+						ReadTimeout:  10 * time.Second,
+						IDLETimeout:  120 * time.Second,
+					},
 				},
 			},
 		},
@@ -460,7 +508,123 @@ func TestLoadFromEnv(t *testing.T) {
 					},
 					RemoteOperationTimeout: 10 * time.Minute,
 					LogLevel:               logger.InfoLevel,
+					Telemetry: TelemetryConfig{
+						Enabled:      false,
+						Addr:         "127.0.0.1:9090",
+						PPROFEnabled: false,
+						ReadTimeout:  10 * time.Second,
+						IDLETimeout:  120 * time.Second,
+					},
 				},
+			},
+		},
+		"telemetry enabled with defaults": {
+			given: given{
+				env: map[string]string{
+					"CONTAINER_RUNTIME_MCP_TELEMETRY_ENABLED": "true",
+				},
+			},
+			want: want{
+				cfg: &Config{
+					MCPServer: MCPServer{
+						Name:    "Container Runtime",
+						Title:   "",
+						Version: "1.0.0",
+						TransportConfig: TransportConfig{
+							Type: TransportStdio,
+							HTTP: &HTTPTransportConfig{
+								Addr:           "127.0.0.1:8080",
+								Path:           "/mcp",
+								SessionTimeout: 30 * time.Minute,
+								ReadTimeout:    10 * time.Second,
+								IDLETimeout:    120 * time.Second,
+								AuthToken:      "",
+							},
+						},
+					},
+					RemoteOperationTimeout: 10 * time.Minute,
+					LogLevel:               logger.InfoLevel,
+					Telemetry: TelemetryConfig{
+						Enabled:      true,
+						Addr:         "127.0.0.1:9090",
+						PPROFEnabled: false,
+						ReadTimeout:  10 * time.Second,
+						IDLETimeout:  120 * time.Second,
+					},
+				},
+			},
+		},
+		"telemetry enabled custom values": {
+			given: given{
+				env: map[string]string{
+					"CONTAINER_RUNTIME_MCP_TELEMETRY_ENABLED":       "true",
+					"CONTAINER_RUNTIME_MCP_TELEMETRY_ADDR":          "127.0.0.1:9091",
+					"CONTAINER_RUNTIME_MCP_TELEMETRY_PPROF_ENABLED": "true",
+					"CONTAINER_RUNTIME_MCP_TELEMETRY_READ_TIMEOUT":  "5s",
+					"CONTAINER_RUNTIME_MCP_TELEMETRY_IDLE_TIMEOUT":  "60s",
+				},
+			},
+			want: want{
+				cfg: &Config{
+					MCPServer: MCPServer{
+						Name:    "Container Runtime",
+						Title:   "",
+						Version: "1.0.0",
+						TransportConfig: TransportConfig{
+							Type: TransportStdio,
+							HTTP: &HTTPTransportConfig{
+								Addr:           "127.0.0.1:8080",
+								Path:           "/mcp",
+								SessionTimeout: 30 * time.Minute,
+								ReadTimeout:    10 * time.Second,
+								IDLETimeout:    120 * time.Second,
+								AuthToken:      "",
+							},
+						},
+					},
+					RemoteOperationTimeout: 10 * time.Minute,
+					LogLevel:               logger.InfoLevel,
+					Telemetry: TelemetryConfig{
+						Enabled:      true,
+						Addr:         "127.0.0.1:9091",
+						PPROFEnabled: true,
+						ReadTimeout:  5 * time.Second,
+						IDLETimeout:  60 * time.Second,
+					},
+				},
+			},
+		},
+		"telemetry negative read timeout": {
+			given: given{
+				env: map[string]string{
+					"CONTAINER_RUNTIME_MCP_TELEMETRY_ENABLED":      "true",
+					"CONTAINER_RUNTIME_MCP_TELEMETRY_READ_TIMEOUT": "-5s",
+				},
+			},
+			want: want{
+				err: true,
+			},
+		},
+		"telemetry negative idle timeout": {
+			given: given{
+				env: map[string]string{
+					"CONTAINER_RUNTIME_MCP_TELEMETRY_ENABLED":      "true",
+					"CONTAINER_RUNTIME_MCP_TELEMETRY_IDLE_TIMEOUT": "-5s",
+				},
+			},
+			want: want{
+				err: true,
+			},
+		},
+		"telemetry invalid address": {
+			given: given{
+				env: map[string]string{
+					"CONTAINER_RUNTIME_MCP_TELEMETRY_ENABLED": "true",
+					"CONTAINER_RUNTIME_MCP_TELEMETRY_ADDR":    "not-an-address",
+				},
+			},
+			want: want{
+				err: true,
 			},
 		},
 	}
@@ -483,8 +647,13 @@ func TestLoadFromEnv(t *testing.T) {
 				"CONTAINER_RUNTIME_MCP_REMOTE_OPERATION_TIMEOUT",
 				"CONTAINER_RUNTIME_MCP_READ_ONLY",
 				"CONTAINER_RUNTIME_LOG_LEVEL",
+				"CONTAINER_RUNTIME_MCP_TELEMETRY_ENABLED",
+				"CONTAINER_RUNTIME_MCP_TELEMETRY_ADDR",
+				"CONTAINER_RUNTIME_MCP_TELEMETRY_PPROF_ENABLED",
+				"CONTAINER_RUNTIME_MCP_TELEMETRY_READ_TIMEOUT",
+				"CONTAINER_RUNTIME_MCP_TELEMETRY_IDLE_TIMEOUT",
 			} {
-				unsetEnv(t, k)
+				env.Unset(t, k)
 			}
 
 			for k, v := range test.given.env {
@@ -523,34 +692,62 @@ func TestValidate_NegativeRemoteOperationTimeout(t *testing.T) {
 }
 
 func TestIsLocalHTTPAddr(t *testing.T) {
+	type given struct {
+		addr string
+	}
+
+	type want struct {
+		local bool
+		err   bool
+	}
+
 	tests := map[string]struct {
-		addr    string
-		local   bool
-		wantErr bool
+		given given
+		want  want
 	}{
-		"127.0.0.1":     {addr: "127.0.0.1:8080", local: true},
-		"localhost":     {addr: "localhost:8080", local: true},
-		"0.0.0.0":       {addr: "0.0.0.0:8080", local: false},
-		"192.168.1.1":   {addr: "192.168.1.1:8080", local: false},
-		"invalid":       {addr: "not-an-address", wantErr: true},
-		"ipv6 loopback": {addr: "[::1]:8080", local: true},
+		"127.0.0.1": {
+			given: given{addr: "127.0.0.1:8080"},
+			want:  want{local: true},
+		},
+		"localhost": {
+			given: given{addr: "localhost:8080"},
+			want:  want{local: true},
+		},
+		"0.0.0.0": {
+			given: given{addr: "0.0.0.0:8080"},
+			want:  want{local: false},
+		},
+		"192.168.1.1": {
+			given: given{addr: "192.168.1.1:8080"},
+			want:  want{local: false},
+		},
+		"invalid": {
+			given: given{addr: "not-an-address"},
+			want:  want{err: true},
+		},
+		"ipv6 loopback": {
+			given: given{addr: "[::1]:8080"},
+			want:  want{local: true},
+		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			local, err := isLocalHTTPAddr(test.addr)
-			if test.wantErr {
+			local, err := isLocalHTTPAddr(test.given.addr)
+
+			if test.want.err {
 				require.Error(t, err)
 				return
 			}
+
 			require.NoError(t, err)
-			assert.Equal(t, test.local, local)
+			assert.Equal(t, test.want.local, local)
 		})
 	}
 }
 
 func TestLoadFromEnv_UnsetEnv(t *testing.T) {
-	for _, k := range []string{
+	for _, key := range []string{
 		"CONTAINER_RUNTIME_MCP_SERVER_NAME",
 		"CONTAINER_RUNTIME_MCP_SERVER_TITLE",
 		"CONTAINER_RUNTIME_MCP_SERVER_VERSION",
@@ -564,15 +761,26 @@ func TestLoadFromEnv_UnsetEnv(t *testing.T) {
 		"CONTAINER_RUNTIME_MCP_REMOTE_OPERATION_TIMEOUT",
 		"CONTAINER_RUNTIME_MCP_READ_ONLY",
 		"CONTAINER_RUNTIME_LOG_LEVEL",
+		"CONTAINER_RUNTIME_MCP_TELEMETRY_ENABLED",
+		"CONTAINER_RUNTIME_MCP_TELEMETRY_ADDR",
+		"CONTAINER_RUNTIME_MCP_TELEMETRY_PPROF_ENABLED",
+		"CONTAINER_RUNTIME_MCP_TELEMETRY_READ_TIMEOUT",
+		"CONTAINER_RUNTIME_MCP_TELEMETRY_IDLE_TIMEOUT",
 	} {
-		unsetEnv(t, k)
+		env.Unset(t, key)
 	}
 
 	cfg, err := LoadFromEnv(context.Background())
 	require.NoError(t, err)
+
 	assert.Equal(t, "Container Runtime", cfg.Name)
 	assert.Equal(t, "", cfg.Title)
 	assert.Equal(t, "1.0.0", cfg.Version)
 	assert.Equal(t, TransportStdio, cfg.TransportConfig.Type)
 	assert.Equal(t, 10*time.Minute, cfg.RemoteOperationTimeout)
+	assert.Equal(t, false, cfg.Telemetry.Enabled)
+	assert.Equal(t, "127.0.0.1:9090", cfg.Telemetry.Addr)
+	assert.Equal(t, false, cfg.Telemetry.PPROFEnabled)
+	assert.Equal(t, 10*time.Second, cfg.Telemetry.ReadTimeout)
+	assert.Equal(t, 120*time.Second, cfg.Telemetry.IDLETimeout)
 }

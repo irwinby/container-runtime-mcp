@@ -171,6 +171,11 @@ Configuration is read from environment variables with the `CONTAINER_RUNTIME_` p
 | `CONTAINER_RUNTIME_MCP_READ_ONLY` | `false` | When `true`, only read-only tools are registered and mutating runtime operations are rejected at the service layer. |
 | `CONTAINER_RUNTIME_MCP_REMOTE_OPERATION_TIMEOUT` | `10m` | Timeout applied to runtime operations. Parsed as a Go duration, such as `30s`, `5m`, or `1h`. |
 | `CONTAINER_RUNTIME_LOG_LEVEL` | `info` | Log level. Supported values: `debug`, `info`, `warn`, `error`. |
+| `CONTAINER_RUNTIME_MCP_TELEMETRY_ENABLED` | `false` | When `true`, starts a separate HTTP telemetry server. |
+| `CONTAINER_RUNTIME_MCP_TELEMETRY_ADDR` | `127.0.0.1:9090` | Telemetry server listen address. |
+| `CONTAINER_RUNTIME_MCP_TELEMETRY_PPROF_ENABLED` | `false` | When `true`, registers `/debug/pprof/*` routes on the telemetry server. |
+| `CONTAINER_RUNTIME_MCP_TELEMETRY_READ_TIMEOUT` | `10s` | Telemetry server read timeout. Parsed as a Go duration. |
+| `CONTAINER_RUNTIME_MCP_TELEMETRY_IDLE_TIMEOUT` | `120s` | Telemetry server idle timeout. Parsed as a Go duration. |
 
 `CONTAINER_RUNTIME_MCP_REMOTE_OPERATION_TIMEOUT` must not be negative. A value of `0` disables the operation timeout and leaves calls bounded only by the MCP request context and runtime client behavior.
 
@@ -183,6 +188,12 @@ Configuration is read from environment variables with the `CONTAINER_RUNTIME_` p
 `CONTAINER_RUNTIME_MCP_TRANSPORT` must be `stdio` or `http`.
 
 `CONTAINER_RUNTIME_MCP_HTTP_PATH` must start with `/`.
+
+`CONTAINER_RUNTIME_MCP_TELEMETRY_READ_TIMEOUT` must not be negative.
+
+`CONTAINER_RUNTIME_MCP_TELEMETRY_IDLE_TIMEOUT` must not be negative.
+
+> **Security warning:** Telemetry is disabled by default. When enabled, it runs on a separate HTTP server independent of the MCP transport. Enable pprof only when you need runtime profiling, because it can expose sensitive process information. Bind the telemetry server to a loopback address unless your network is protected.
 
 Example:
 
@@ -220,6 +231,22 @@ Run in read-only mode over HTTP (authentication optional):
 CONTAINER_RUNTIME_MCP_TRANSPORT=http \
 CONTAINER_RUNTIME_MCP_HTTP_ADDR=0.0.0.0:3000 \
 CONTAINER_RUNTIME_MCP_READ_ONLY=true \
+make run
+```
+
+Run with telemetry enabled:
+
+```sh
+CONTAINER_RUNTIME_MCP_TELEMETRY_ENABLED=true \
+CONTAINER_RUNTIME_MCP_TELEMETRY_ADDR=127.0.0.1:9090 \
+make run
+```
+
+Run with telemetry and pprof enabled:
+
+```sh
+CONTAINER_RUNTIME_MCP_TELEMETRY_ENABLED=true \
+CONTAINER_RUNTIME_MCP_TELEMETRY_PPROF_ENABLED=true \
 make run
 ```
 

@@ -41,11 +41,20 @@ type MCPServer struct {
 	TransportConfig TransportConfig
 }
 
+type TelemetryConfig struct {
+	Enabled      bool          `env:"MCP_TELEMETRY_ENABLED,default=false"`
+	Addr         string        `env:"MCP_TELEMETRY_ADDR,default=127.0.0.1:9090"`
+	PPROFEnabled bool          `env:"MCP_TELEMETRY_PPROF_ENABLED,default=false"`
+	ReadTimeout  time.Duration `env:"MCP_TELEMETRY_READ_TIMEOUT,default=10s"`
+	IDLETimeout  time.Duration `env:"MCP_TELEMETRY_IDLE_TIMEOUT,default=120s"`
+}
+
 type Config struct {
 	MCPServer
 	RemoteOperationTimeout time.Duration `env:"MCP_REMOTE_OPERATION_TIMEOUT,default=10m"`
 	ReadOnly               bool          `env:"MCP_READ_ONLY,default=false"`
 	LogLevel               logger.Level  `env:"LOG_LEVEL,default=info"`
+	Telemetry              TelemetryConfig
 }
 
 // Validate checks the configuration for errors.
@@ -54,49 +63,92 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("remote operation timeout must not be negative")
 	}
 
+	if err := cfg.validateLogLevel(); err != nil {
+		return err
+	}
+
+	if err := cfg.validateTransport(); err != nil {
+		return err
+	}
+
+	if err := cfg.validateTelemetry(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (cfg *Config) validateLogLevel() error {
 	switch cfg.LogLevel {
 	case logger.DebugLevel, logger.InfoLevel, logger.WarnLevel, logger.ErrorLevel:
+		return nil
 	default:
 		return fmt.Errorf("unsupported log level: %s", cfg.LogLevel)
 	}
+}
 
+func (cfg *Config) validateTransport() error {
 	switch cfg.TransportConfig.Type {
-	case TransportStdio, TransportHTTP:
+	case TransportStdio:
+		return nil
+	case TransportHTTP:
+		return cfg.validateHTTP()
 	default:
 		return fmt.Errorf("unsupported transport: %s", cfg.TransportConfig.Type)
 	}
+}
 
-	if cfg.TransportConfig.Type == TransportHTTP {
-		if cfg.TransportConfig.HTTP == nil {
-			return fmt.Errorf("http transport requires http configuration")
+func (cfg *Config) validateHTTP() error {
+	if cfg.TransportConfig.HTTP == nil {
+		return fmt.Errorf("http transport requires http configuration")
+	}
+
+	if !strings.HasPrefix(cfg.TransportConfig.HTTP.Path, "/") {
+		return fmt.Errorf("http path must start with /")
+	}
+
+	if cfg.TransportConfig.HTTP.SessionTimeout < 0 {
+		return fmt.Errorf("http session timeout must not be negative")
+	}
+
+	if cfg.TransportConfig.HTTP.ReadTimeout < 0 {
+		return fmt.Errorf("http read timeout must not be negative")
+	}
+
+	if cfg.TransportConfig.HTTP.IDLETimeout < 0 {
+		return fmt.Errorf("http idle timeout must not be negative")
+	}
+
+	if !cfg.ReadOnly && cfg.TransportConfig.HTTP.AuthToken == "" {
+		isLocal, err := isLocalHTTPAddr(cfg.TransportConfig.HTTP.Addr)
+		if err != nil {
+			return fmt.Errorf("validate http address: %w", err)
 		}
 
-		if !strings.HasPrefix(cfg.TransportConfig.HTTP.Path, "/") {
-			return fmt.Errorf("http path must start with /")
+		if !isLocal {
+			return fmt.Errorf("http auth token is required for non-local write-capable http transport")
 		}
+	}
 
-		if cfg.TransportConfig.HTTP.SessionTimeout < 0 {
-			return fmt.Errorf("http session timeout must not be negative")
-		}
+	return nil
+}
 
-		if cfg.TransportConfig.HTTP.ReadTimeout < 0 {
-			return fmt.Errorf("http read timeout must not be negative")
-		}
+func (cfg *Config) validateTelemetry() error {
+	if !cfg.Telemetry.Enabled {
+		return nil
+	}
 
-		if cfg.TransportConfig.HTTP.IDLETimeout < 0 {
-			return fmt.Errorf("http idle timeout must not be negative")
-		}
+	if cfg.Telemetry.ReadTimeout < 0 {
+		return fmt.Errorf("telemetry read timeout must not be negative")
+	}
 
-		if !cfg.ReadOnly && cfg.TransportConfig.HTTP.AuthToken == "" {
-			isLocal, err := isLocalHTTPAddr(cfg.TransportConfig.HTTP.Addr)
-			if err != nil {
-				return fmt.Errorf("validate http address: %w", err)
-			}
+	if cfg.Telemetry.IDLETimeout < 0 {
+		return fmt.Errorf("telemetry idle timeout must not be negative")
+	}
 
-			if !isLocal {
-				return fmt.Errorf("http auth token is required for non-local write-capable http transport")
-			}
-		}
+	_, _, err := net.SplitHostPort(cfg.Telemetry.Addr)
+	if err != nil {
+		return fmt.Errorf("validate telemetry address: %w", err)
 	}
 
 	return nil

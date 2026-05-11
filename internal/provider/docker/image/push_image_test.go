@@ -3,34 +3,16 @@ package image
 import (
 	"context"
 	"errors"
-	"io"
-	"iter"
 	"testing"
 
 	providers "github.com/irwinby/container-runtime-mcp/internal/provider"
 	dockermock "github.com/irwinby/container-runtime-mcp/internal/provider/docker/mock"
-	"github.com/moby/moby/api/types/jsonstream"
+	testdocker "github.com/irwinby/container-runtime-mcp/internal/testing/docker"
 	"github.com/moby/moby/client"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
-
-type testPushResponse struct {
-	waitErr  error
-	closeErr error
-	closed   bool
-}
-
-func (r *testPushResponse) Read(p []byte) (int, error) { return 0, io.EOF }
-func (r *testPushResponse) Close() error {
-	r.closed = true
-	return r.closeErr
-}
-func (r *testPushResponse) JSONMessages(ctx context.Context) iter.Seq2[jsonstream.Message, error] {
-	return func(yield func(jsonstream.Message, error) bool) {}
-}
-func (r *testPushResponse) Wait(ctx context.Context) error { return r.waitErr }
 
 func TestProviderPushImage(t *testing.T) {
 	type given struct {
@@ -44,6 +26,7 @@ func TestProviderPushImage(t *testing.T) {
 		ref      string
 		all      bool
 		platform *ocispec.Platform
+		err      bool
 	}
 
 	plat := &ocispec.Platform{OS: "linux", Architecture: "arm64"}
@@ -75,6 +58,7 @@ func TestProviderPushImage(t *testing.T) {
 			},
 			want: want{
 				ref: "myapp:latest",
+				err: true,
 			},
 		},
 		"wait error": {
@@ -86,6 +70,7 @@ func TestProviderPushImage(t *testing.T) {
 			},
 			want: want{
 				ref: "myapp:latest",
+				err: true,
 			},
 		},
 		"close error": {
@@ -97,6 +82,7 @@ func TestProviderPushImage(t *testing.T) {
 			},
 			want: want{
 				ref: "myapp:latest",
+				err: true,
 			},
 		},
 		"success without platform": {
@@ -117,31 +103,33 @@ func TestProviderPushImage(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			mockClient := dockermock.NewMockDockerClient(t)
 
-			var resp *testPushResponse
+			var response *testdocker.ProgressResponse
+
 			if test.given.pushErr == nil {
-				resp = &testPushResponse{waitErr: test.given.waitErr, closeErr: test.given.closeErr}
+				response = &testdocker.ProgressResponse{WaitErr: test.given.waitErr, CloseErr: test.given.closeErr}
 			}
 
 			mockClient.On("ImagePush", mock.Anything, test.want.ref, client.ImagePushOptions{
 				All:      test.want.all,
 				Platform: test.want.platform,
-			}).Return(resp, test.given.pushErr)
+			}).Return(response, test.given.pushErr)
 
 			provider := NewProvider(mockClient, nopTimeout)
 
 			err := provider.PushImage(context.Background(), test.given.params)
 
-			if test.given.pushErr != nil || test.given.waitErr != nil || test.given.closeErr != nil {
+			if test.want.err {
 				require.Error(t, err)
-				if resp != nil {
-					require.True(t, resp.closed, "response should be closed")
+				if response != nil {
+					require.True(t, response.Closed, "response should be closed")
 				}
+
 				return
 			}
 
 			require.NoError(t, err)
-			require.NotNil(t, resp)
-			require.True(t, resp.closed, "response should be closed")
+			require.NotNil(t, response)
+			require.True(t, response.Closed, "response should be closed")
 		})
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/irwinby/container-runtime-mcp/internal/api/mcp/status"
+	"github.com/irwinby/container-runtime-mcp/pkg/status"
 )
 
 // Auth returns an HTTP middleware that enforces bearer token authentication.
