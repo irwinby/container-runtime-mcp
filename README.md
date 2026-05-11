@@ -82,6 +82,21 @@ make image-build CONTAINER_RUNTIME=podman
 
 > **Security warning:** Mounting `/var/run/docker.sock` gives the container access to the host Docker daemon. Use read-only mode where possible and avoid exposing HTTP transport to untrusted networks.
 
+## Examples
+
+The `examples/` directory contains practical configurations and workflows you can run or paste into your MCP client.
+
+- [MCP client configuration](examples/mcp-client.json) for stdio transport.
+- [Read-only MCP client configuration](examples/mcp-client-read-only.json) for safe, non-mutating usage.
+- [HTTP environment files](examples/) for local, read-only, and authenticated HTTP transport.
+- [Workflow guides](examples/workflows/):
+  - [Read-only workflow](examples/workflows/read-only.md)
+  - [Container lifecycle](examples/workflows/container-lifecycle.md)
+  - [Image operations](examples/workflows/images.md)
+  - [Volume operations](examples/workflows/volumes.md)
+
+See [examples/README.md](examples/README.md) for setup, verification steps, and how to run each example.
+
 Use the binary as a stdio MCP server command in your MCP client configuration. For example:
 
 ```json

@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "container-runtime": {
+      "command": "/absolute/path/to/container-runtime-mcp",
+      "env": {
+        "CONTAINER_RUNTIME_MCP_READ_ONLY": "true"
+      }
+    }
+  }
+}

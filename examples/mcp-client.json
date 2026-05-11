@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "container-runtime": {
+      "command": "/absolute/path/to/container-runtime-mcp"
+    }
+  }
+}
